@@ -24,6 +24,8 @@ export const metadata: Metadata = {
   keywords: ['chinese divination', 'chinese oracle', 'entertainment', 'cultural experience', 'reflection'],
 }
 
+import AuthButton from '@/components/AuthButton'
+
 export default function RootLayout({
   children,
 }: {
@@ -32,6 +34,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${notoSerifSC.variable} ${playfairDisplay.variable} zen-container`}>
+        {/* Auth Button - Fixed top right */}
+        <div className="fixed top-4 right-4 z-50">
+          <AuthButton />
+        </div>
         {children}
         <footer className="w-full py-8 text-center relative z-10">
           <p 
