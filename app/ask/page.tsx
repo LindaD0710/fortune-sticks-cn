@@ -145,22 +145,22 @@ export default function AskPage() {
             rotate: 0,
           }}
           animate={{
-            x: () => {
+            x: (() => {
               const input = inputRef.current
               if (input) {
                 const rect = input.getBoundingClientRect()
                 return rect.left + rect.width / 2
               }
               return animatingText.startPos.x
-            },
-            y: () => {
+            })(),
+            y: (() => {
               const input = inputRef.current
               if (input) {
                 const rect = input.getBoundingClientRect()
                 return rect.top + rect.height / 2
               }
               return animatingText.startPos.y
-            },
+            })(),
             opacity: [1, 0.9, 0.7, 0.4, 0.1, 0],
             scale: [1, 0.95, 0.8, 0.6, 0.4, 0.2],
             rotate: [0, 5, -5, 3, -3, 0],
