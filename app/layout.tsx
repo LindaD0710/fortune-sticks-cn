@@ -19,12 +19,10 @@ const playfairDisplay = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: 'Oriental Oracle - Traditional Chinese Divination (Entertainment Only)',
-  description: 'Experience the ancient art of Chinese divination for entertainment and cultural reflection. For entertainment purposes only - not professional advice.',
-  keywords: ['chinese divination', 'chinese oracle', 'entertainment', 'cultural experience', 'reflection'],
+  title: '东方神签 - 传统中国占卜（仅供娱乐）',
+  description: '体验古老的中国占卜艺术，用于娱乐和文化反思。仅供娱乐，非专业建议。',
+  keywords: ['中国占卜', '神签', '娱乐', '文化体验', '反思'],
 }
-
-import AuthButton from '@/components/AuthButton'
 
 export default function RootLayout({
   children,
@@ -32,12 +30,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="zh-CN">
       <body className={`${inter.variable} ${notoSerifSC.variable} ${playfairDisplay.variable} zen-container`}>
-        {/* Auth Button - Fixed top right */}
-        <div className="fixed top-4 right-4 z-50">
-          <AuthButton />
-        </div>
         {children}
         <footer className="w-full py-8 text-center relative z-10">
           <p 

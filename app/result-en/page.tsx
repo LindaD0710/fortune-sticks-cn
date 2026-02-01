@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useState } from 'react'
-import { ArrowLeft, Lock, Heart, DollarSign, Briefcase, GraduationCap, Activity, Scale, Plane, Users, TrendingUp } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { useInView } from 'framer-motion'
+import { ArrowLeft, Lock, Heart, DollarSign, Briefcase, GraduationCap, Activity, Scale, Plane, Users, TrendingUp, Loader2, Waves, GitBranch, Sparkles, X, ScrollText, BookOpen, Lightbulb } from 'lucide-react'
 import { getFortuneStick } from '@/lib/fortune-sticks'
 
 // Moon Blocks (筊杯) component for opening animation
@@ -343,7 +344,7 @@ function CollectionSealWatermark() {
 // Unified container width constant - responsive: 95% on mobile, 90% on tablet, max-w-5xl on desktop
 const UNIFIED_CONTAINER_WIDTH = 'w-[95%] sm:w-[90%] max-w-5xl'
 
-function OracleVerseCard({ content, contentEN }: { content: string; contentEN: string }) {
+function OracleVerseCard({ content }: { content: string }) {
   return (
     <motion.div
       className={`relative ${UNIFIED_CONTAINER_WIDTH} mx-auto my-8 rounded-xl`}
@@ -358,12 +359,18 @@ function OracleVerseCard({ content, contentEN }: { content: string; contentEN: s
           borderLeft: '2px solid #FFD700',
         }}
       >
+          {/* Title inside the card */}
+          <h3 className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-4 sm:mb-5 uppercase tracking-wider text-left flex items-center gap-2 sm:gap-3">
+            <OracleVerseIcon />
+            签诗
+          </h3>
+          
           {/* Collection Seal Watermark */}
           <CollectionSealWatermark />
           
-          {/* Content - Chinese poem first, then English */}
+          {/* Content - Chinese poem */}
           <div className="flex flex-col gap-4">
-            {/* Chinese original poem (Content) - Two lines format with vertical alignment */}
+            {/* Chinese original poem (Content) - Two lines format */}
             <div className="w-full flex justify-center">
               {(() => {
                 // Split Chinese poem by punctuation (，。、) and format into two lines
@@ -373,13 +380,11 @@ function OracleVerseCard({ content, contentEN }: { content: string; contentEN: s
                 
                 return (
                   <div 
-                    className="text-lg sm:text-xl md:text-2xl font-serif font-light tracking-[0.1em] sm:tracking-[0.15em] leading-[2.2] sm:leading-[2.5]"
+                    className="text-lg sm:text-xl md:text-2xl font-serif font-light tracking-[0.1em] sm:tracking-[0.15em] leading-[2.2] sm:leading-[2.5] text-center"
                     style={{ 
                       fontFamily: '"STXingkai", "Xingkai SC", "行楷", "KaiTi", "楷体", serif',
-                      textAlign: 'left',
-                      display: 'inline-block',
-                      color: '#FFFFFF', // White color
-                      textShadow: '0 2px 4px rgba(0, 0, 0, 0.3), 0 0 8px rgba(255, 215, 0, 0.15)', // Subtle shadow with golden glow
+                      color: '#FFFFFF',
+                      textShadow: '0 2px 4px rgba(0, 0, 0, 0.3), 0 0 8px rgba(255, 215, 0, 0.15)',
                     }}
                   >
                     <div style={{ marginBottom: '0.5em' }}>{firstLine}</div>
@@ -387,16 +392,6 @@ function OracleVerseCard({ content, contentEN }: { content: string; contentEN: s
                   </div>
                 );
               })()}
-            </div>
-
-            {/* English translation (Content_EN) */}
-            <div className="w-full text-center">
-              <p 
-                className="text-sm sm:text-base md:text-lg italic text-white leading-relaxed"
-                style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
-              >
-                {contentEN}
-              </p>
             </div>
           </div>
       </div>
@@ -446,8 +441,8 @@ function LubanRulerIcon({ className }: { className?: string }) {
   )
 }
 
-// Story Brief component - Dark purple background with gold border, includes Story_EN and Story_Brief_EN
-function StoryBrief({ storyEN, storyBrief }: { storyEN: string; storyBrief: string }) {
+// Story Brief component - Dark purple background with gold border, includes Story and Story_Brief
+function StoryBrief({ story, storyBrief }: { story: string; storyBrief: string }) {
   return (
     <motion.div
       className={`relative ${UNIFIED_CONTAINER_WIDTH} mx-auto`}
@@ -455,16 +450,6 @@ function StoryBrief({ storyEN, storyBrief }: { storyEN: string; storyBrief: stri
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 1.2 }}
     >
-      <h3 
-        className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-3 sm:mb-4 uppercase tracking-wider"
-        style={{ 
-          paddingLeft: '0px',
-          marginLeft: '0px',
-          textAlign: 'left',
-        }}
-      >
-        THE ANCIENT LEGEND
-      </h3>
       {/* Card with unified border style: left border 2px solid gold, other borders 1px subtle gold */}
       <div 
         className="relative rounded-xl p-4 sm:p-6 md:p-8 bg-white/5 backdrop-blur-md"
@@ -472,24 +457,30 @@ function StoryBrief({ storyEN, storyBrief }: { storyEN: string; storyBrief: stri
           borderLeft: '2px solid #FFD700',
         }}
       >
-          {/* Story_EN subtitle with icon */}
-          {storyEN && (
+          {/* Title inside the card */}
+          <h3 className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-4 sm:mb-5 uppercase tracking-wider text-left flex items-center gap-2 sm:gap-3">
+            <StoryIcon />
+            典故
+          </h3>
+          
+          {/* Story subtitle with icon */}
+          {story && (
             <div className="flex items-center justify-center gap-3 mb-4">
               <LubanRulerIcon className="opacity-60" />
               <p 
-                className="text-lg sm:text-xl font-medium"
+                className="text-lg sm:text-xl font-medium text-center"
                 style={{ 
                   color: '#FFD700',
                   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 }}
               >
-                {storyEN}
+                {story}
               </p>
               <LubanRulerIcon className="opacity-60" />
             </div>
           )}
-          {/* Story_Brief_EN content */}
-          <p className="text-white/90 text-sm sm:text-base md:text-lg leading-relaxed">
+          {/* Story_Brief content */}
+          <p className="text-white/90 text-sm sm:text-base md:text-lg leading-relaxed text-center">
             {storyBrief}
           </p>
       </div>
@@ -498,39 +489,41 @@ function StoryBrief({ storyEN, storyBrief }: { storyEN: string; storyBrief: stri
 }
 
 // Items grid component with icons
-function ItemsGrid({ itemsEN }: { itemsEN: string }) {
-  // Parse items string and map to icons
+function ItemsGrid({ items }: { items: string }) {
+  // Parse Chinese items string and map to icons
   const parseItems = (items: string) => {
     if (!items) return []
     
     const itemMap: { [key: string]: { icon: any; label: string } } = {
-      'Career': { icon: Briefcase, label: 'Career' },
-      'Wealth': { icon: DollarSign, label: 'Wealth' },
-      'Relationships': { icon: Heart, label: 'Relationships' },
-      'Love': { icon: Heart, label: 'Love' },
-      'Achievement': { icon: GraduationCap, label: 'Achievement' },
-      'Health': { icon: Activity, label: 'Health' },
-      'Legal': { icon: Scale, label: 'Legal' },
-      'Travel': { icon: Plane, label: 'Travel' },
-      'Social': { icon: Users, label: 'Social' },
-      'Current Situation': { icon: TrendingUp, label: 'Current Situation' },
-      'All Matters': { icon: TrendingUp, label: 'All Matters' },
+      '事业': { icon: Briefcase, label: '事业' },
+      '财运': { icon: DollarSign, label: '财运' },
+      '婚姻': { icon: Heart, label: '婚姻' },
+      '感情': { icon: Heart, label: '感情' },
+      '功名': { icon: GraduationCap, label: '功名' },
+      '健康': { icon: Activity, label: '健康' },
+      '疾病': { icon: Activity, label: '疾病' },
+      '诉讼': { icon: Scale, label: '诉讼' },
+      '出行': { icon: Plane, label: '出行' },
+      '远行': { icon: Plane, label: '远行' },
+      '社交': { icon: Users, label: '社交' },
+      '当前状况': { icon: TrendingUp, label: '当前状况' },
+      '所有事项': { icon: TrendingUp, label: '所有事项' },
     }
 
-    return items.split('; ').map(item => {
-      const [key, value] = item.split(': ')
-      const mapped = itemMap[key] || { icon: TrendingUp, label: key }
+    return items.split(';').map(item => {
+      const [key, value] = item.split(':')
+      const mapped = itemMap[key?.trim() || ''] || { icon: TrendingUp, label: key?.trim() || '' }
       return {
         ...mapped,
-        value: value || '',
-        key,
+        value: value?.trim() || '',
+        key: key?.trim() || '',
       }
-    })
+    }).filter(item => item.key && item.value)
   }
 
-  const items = parseItems(itemsEN)
+  const parsedItems = parseItems(items)
 
-  if (items.length === 0) return null
+  if (parsedItems.length === 0) return null
 
   return (
     <motion.div
@@ -539,18 +532,8 @@ function ItemsGrid({ itemsEN }: { itemsEN: string }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 1.5 }}
     >
-      <h3 
-        className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-3 sm:mb-4 uppercase tracking-wider"
-        style={{ 
-          paddingLeft: '0px',
-          marginLeft: '0px',
-          textAlign: 'left',
-        }}
-      >
-        DESTINY'S COMPASS
-      </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        {items.map((item, index) => {
+        {parsedItems.map((item, index) => {
           const Icon = item.icon
           return (
             <motion.div
@@ -609,8 +592,243 @@ function ItemsGrid({ itemsEN }: { itemsEN: string }) {
   )
 }
 
-// Payment card component with pulse animation
-function PaymentCard({ onUnlock }: { onUnlock: () => void }) {
+// Weaving animation component for loading state
+function WeavingAnimation() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <div className="relative w-64 h-64 mb-8">
+        <svg
+          className="absolute inset-0 w-full h-full"
+          viewBox="0 0 200 200"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <motion.path
+            d="M 20 100 Q 50 20, 100 50 T 180 100"
+            fill="none"
+            stroke="#FFD700"
+            strokeWidth="2"
+            strokeLinecap="round"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ 
+              pathLength: 1, 
+              opacity: [0, 1, 1, 0],
+            }}
+            transition={{
+              pathLength: { duration: 2, repeat: Infinity, ease: "linear" },
+              opacity: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+            }}
+            style={{
+              filter: 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.8))',
+            }}
+          />
+          <motion.path
+            d="M 20 100 Q 50 180, 100 150 T 180 100"
+            fill="none"
+            stroke="#FFD700"
+            strokeWidth="2"
+            strokeLinecap="round"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ 
+              pathLength: 1, 
+              opacity: [0, 1, 1, 0],
+            }}
+            transition={{
+              pathLength: { duration: 2, repeat: Infinity, ease: "linear", delay: 0.5 },
+              opacity: { duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }
+            }}
+            style={{
+              filter: 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.8))',
+            }}
+          />
+        </svg>
+      </div>
+      <motion.p
+        className="text-amber-400/80 text-sm sm:text-base tracking-widest uppercase"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: [0.5, 1, 1, 0.5], y: 0 }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      >
+        正在为您编织解读...
+      </motion.p>
+    </div>
+  )
+}
+
+// Scroll-triggered fade-in wrapper component
+function ScrollFadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: "-100px" })
+  
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 30 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+      transition={{
+        duration: 0.8,
+        delay: delay,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+// Icon components for section headers
+function ResonanceIcon() {
+  return (
+    <Waves 
+      className="w-5 h-5 text-amber-400" 
+      strokeWidth={1.5}
+      style={{ filter: 'drop-shadow(0 0 3px rgba(255, 215, 0, 0.5))' }}
+    />
+  )
+}
+
+function WeavingIcon() {
+  return (
+    <GitBranch 
+      className="w-5 h-5 text-amber-400" 
+      strokeWidth={1.5}
+      style={{ filter: 'drop-shadow(0 0 3px rgba(255, 215, 0, 0.5))' }}
+    />
+  )
+}
+
+function RitualIcon() {
+  return (
+    <Sparkles 
+      className="w-5 h-5 text-amber-400" 
+      strokeWidth={1.5}
+      style={{ filter: 'drop-shadow(0 0 3px rgba(255, 215, 0, 0.5))' }}
+    />
+  )
+}
+
+function OracleVerseIcon() {
+  return (
+    <ScrollText 
+      className="w-5 h-5 text-amber-400" 
+      strokeWidth={1.5}
+      style={{ filter: 'drop-shadow(0 0 3px rgba(255, 215, 0, 0.5))' }}
+    />
+  )
+}
+
+function StoryIcon() {
+  return (
+    <BookOpen 
+      className="w-5 h-5 text-amber-400" 
+      strokeWidth={1.5}
+      style={{ filter: 'drop-shadow(0 0 3px rgba(255, 215, 0, 0.5))' }}
+    />
+  )
+}
+
+function RevelationIcon() {
+  return (
+    <Lightbulb 
+      className="w-5 h-5 text-amber-400" 
+      strokeWidth={1.5}
+      style={{ filter: 'drop-shadow(0 0 3px rgba(255, 215, 0, 0.5))' }}
+    />
+  )
+}
+
+// Component to render text with golden highlights
+function HighlightedText({ text }: { text: string }) {
+  const parts = text.split(/(\*\*.*?\*\*)/g)
+  
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          const goldenText = part.slice(2, -2)
+          return (
+            <span 
+              key={index}
+              className="font-bold text-[#FFD700]"
+              style={{
+                textShadow: '0 0 8px rgba(255, 215, 0, 0.4)',
+              }}
+            >
+              {goldenText}
+            </span>
+          )
+        }
+        return <span key={index}>{part}</span>
+      })}
+    </>
+  )
+}
+
+// Payment card component with Creem payment integration (REMOVED - no longer needed)
+function PaymentCard({ stickNumber, question }: { stickNumber: number; question: string | null }) {
+  const [user, setUser] = useState<SupabaseUser | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const supabase = createClient()
+
+  useEffect(() => {
+    // Check if user is logged in
+    supabase.auth.getUser().then((response: { data: { user: SupabaseUser | null } | null }) => {
+      setUser(response.data?.user ?? null)
+    })
+
+    supabase.auth.onAuthStateChange((_event: any, session: any) => {
+      setUser(session?.user ?? null)
+    })
+  }, [supabase.auth])
+
+  const handlePayment = async () => {
+    // Check if user is logged in
+    if (!user) {
+      alert('Please sign in first to unlock the interpretation.')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // Call payment API to create payment session
+      const response = await fetch('/api/payment/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: 1.99,
+          currency: 'USD',
+          stickNumber,
+          question: question || '',
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create payment session')
+      }
+
+      // Redirect to payment URL (Creem payment page or callback)
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl
+      } else {
+        throw new Error('No payment URL returned')
+      }
+    } catch (err: any) {
+      console.error('Payment error:', err)
+      setError(err.message || 'Failed to process payment. Please try again.')
+      setIsLoading(false)
+    }
+  }
+
   return (
     <motion.div
       className={`relative ${UNIFIED_CONTAINER_WIDTH} mx-auto mt-12`}
@@ -640,37 +858,61 @@ function PaymentCard({ onUnlock }: { onUnlock: () => void }) {
           <p className="text-white/40 text-xs mb-3 font-light">
             Join 10,000+ seekers who found clarity through our AI-guided wisdom.
           </p>
+          
+          {/* Error message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
+              <p className="text-red-300 text-sm">{error}</p>
+            </div>
+          )}
+
           <motion.button
-            onClick={onUnlock}
-            className="relative w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-white font-bold text-lg rounded-full shadow-lg overflow-hidden transition-all duration-300 hover:shadow-[0_0_4px_rgba(255,215,0,0.3),0_0_6px_rgba(255,215,0,0.15),0_4px_6px_rgba(0,0,0,0.1)]"
-            whileHover={{ 
-              scale: 1.08,
-            }}
-            whileTap={{ scale: 0.95 }}
+            onClick={handlePayment}
+            disabled={isLoading || !user}
+            className="relative w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-white font-bold text-lg rounded-full shadow-lg overflow-hidden transition-all duration-300 hover:shadow-[0_0_4px_rgba(255,215,0,0.3),0_0_6px_rgba(255,215,0,0.15),0_4px_6px_rgba(0,0,0,0.1)] disabled:opacity-50 disabled:cursor-not-allowed"
+            whileHover={!isLoading && user ? { scale: 1.08 } : {}}
+            whileTap={!isLoading && user ? { scale: 0.95 } : {}}
           >
             {/* Premium horizontal shimmer effect */}
-            <motion.div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                zIndex: 1,
-                background: 'linear-gradient(90deg, transparent 0%, transparent 30%, rgba(255, 255, 255, 0.4) 50%, transparent 70%, transparent 100%)',
-                backgroundSize: '200% 100%',
-              }}
-              animate={{
-                backgroundPosition: ['200% 0', '-200% 0'],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: 'linear',
-              }}
-            />
+            {!isLoading && (
+              <motion.div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  zIndex: 1,
+                  background: 'linear-gradient(90deg, transparent 0%, transparent 30%, rgba(255, 255, 255, 0.4) 50%, transparent 70%, transparent 100%)',
+                  backgroundSize: '200% 100%',
+                }}
+                animate={{
+                  backgroundPosition: ['200% 0', '-200% 0'],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: 'linear',
+                }}
+              />
+            )}
             
             {/* Text - clean and clear, no shadows */}
-            <span className="relative z-20 font-bold">
-              Unlock for $1.99
+            <span className="relative z-20 font-bold flex items-center justify-center gap-2">
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Processing...
+                </>
+              ) : !user ? (
+                'Sign in to Unlock'
+              ) : (
+                'Unlock for $1.99'
+              )}
             </span>
           </motion.button>
+
+          {!user && (
+            <p className="text-white/50 text-xs mt-3">
+              Please sign in with Google to proceed with payment
+            </p>
+          )}
         </div>
       </div>
     </motion.div>
@@ -696,6 +938,16 @@ export default function ResultPageEN() {
   const [showContent, setShowContent] = useState(false)
   const [stickNumber, setStickNumber] = useState<number | null>(null)
   const [userQuestion, setUserQuestion] = useState<string | null>(null)
+  const [interpretation, setInterpretation] = useState<{
+    insight: string
+    guidance: string
+    practice: string
+  } | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isWeaving, setIsWeaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [showQRCode, setShowQRCode] = useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const stick = sessionStorage.getItem('drawnStick')
@@ -713,10 +965,68 @@ export default function ResultPageEN() {
   const handleMoonBlocksComplete = () => {
     setShowMoonBlocks(false)
     setShowContent(true)
+    // Start fetching AI interpretation after content is shown
+    const stick = sessionStorage.getItem('drawnStick')
+    const question = sessionStorage.getItem('userQuestion')
+    if (stick && question) {
+      fetchInterpretation(parseInt(stick), question)
+    }
   }
 
-  const handleUnlock = () => {
-    window.location.href = '/interpret'
+  const fetchInterpretation = async (stickNum: number, question: string) => {
+    try {
+      setIsLoading(true)
+      setIsWeaving(true)
+      setError(null)
+      
+      setTimeout(() => {
+        setIsWeaving(false)
+      }, 3000)
+
+      const fortuneStick = getFortuneStick(stickNum)
+      
+      const response = await fetch('/api/interpret', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question,
+          fortuneStick: {
+            number: fortuneStick.number,
+            level: fortuneStick.level,
+            content: fortuneStick.content,
+            detail2: fortuneStick.detail2,
+            story: fortuneStick.story,
+            storyBrief: fortuneStick.storyBrief,
+            items: fortuneStick.items,
+          },
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || data.error) {
+        throw new Error(data.details || data.error || '生成解读失败')
+      }
+
+      if (!data.insight && !data.resonance) {
+        throw new Error('API返回的解读数据不完整')
+      }
+
+      setInterpretation({
+        insight: data.insight || data.resonance || '签文已感受到你的问题，能量正在与你的问题产生共鸣...',
+        guidance: data.guidance || data.weaving || '签文的智慧提醒我们，每一个挑战都蕴含着成长的机会。',
+        practice: data.practice || data.ritual || '本周每天花10分钟静心反思，写下你的感受和想法。'
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '发生错误')
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false)
+        setIsWeaving(false)
+      }, 3000)
+    }
   }
 
   const fortuneStick = stickNumber ? getFortuneStick(stickNumber) : null
@@ -740,7 +1050,7 @@ export default function ResultPageEN() {
             style={{ minHeight: '44px', minWidth: '44px' }}
           >
             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span>Back</span>
+            <span>返回</span>
           </Link>
         </FadeInText>
 
@@ -753,94 +1063,94 @@ export default function ResultPageEN() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.6 }}
             >
-              {/* Guidance text */}
-              <FadeInText delay={0.3} className="text-center mb-8">
-                <p className="text-white/90 text-lg sm:text-xl md:text-2xl font-light italic">
-                  The Oracle is confirmed. Wisdom is unfolding...
-                </p>
-              </FadeInText>
 
               {/* Golden divider */}
               <GoldenDivider />
 
-              {/* Lot number */}
+              {/* 1. Lot Number with Seal */}
               {stickNumber && (
-                <FadeInText delay={0.4} className="text-center mb-8">
-                  <div 
-                    className="relative inline-block px-6 py-3 rounded-full"
-                    style={{
-                      background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 100%)',
-                      border: '1px solid #FFD700',
-                    }}
-                  >
-                    <p className="text-white text-2xl sm:text-3xl font-bold">
-                      Lot #{stickNumber}
-                    </p>
+                <FadeInText delay={0.5}>
+                  <div className={`${UNIFIED_CONTAINER_WIDTH} mx-auto relative flex items-center mb-8`}>
+                    {/* Seal fixed on the left, aligned with card left edge */}
+                    <div className="absolute left-0 flex-shrink-0 z-10">
+                      <Seal level={fortuneStick.level || '大吉'} />
+                    </div>
+                    {/* Lot number title - Large Serif with golden color, centered, responsive */}
+                    <h1 
+                      className="w-full text-center text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold"
+                      style={{ 
+                        fontFamily: '"Playfair Display", "Cormorant Garamond", "EB Garamond", Georgia, serif',
+                        color: '#FFD700',
+                        fontWeight: 700,
+                        wordBreak: 'break-word',
+                        hyphens: 'auto',
+                      }}
+                    >
+                      第 {stickNumber} 签
+                    </h1>
                   </div>
                 </FadeInText>
               )}
 
-              {/* Title: Level_EN with Seal - Seal fixed on left, Title centered */}
-              <FadeInText delay={0.5}>
-                <div className={`${UNIFIED_CONTAINER_WIDTH} mx-auto relative flex items-center mb-2`}>
-                  {/* Seal fixed on the left, aligned with card left edge */}
-                  <div className="absolute left-0 flex-shrink-0 z-10">
-                    <Seal level={fortuneStick.level || '大吉'} />
-                  </div>
-                  {/* Level_EN title - Large Serif with golden color, centered, responsive */}
-                  <h1 
-                    className="w-full text-center text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold"
-                    style={{ 
-                      fontFamily: '"Playfair Display", "Cormorant Garamond", "EB Garamond", Georgia, serif',
-                      color: '#FFD700',
-                      fontWeight: 700,
-                      wordBreak: 'break-word',
-                      hyphens: 'auto',
-                    }}
-                  >
-                    {fortuneStick.levelEN || 'Divine Favor'}
-                  </h1>
-                </div>
-              </FadeInText>
+              {/* Golden divider */}
+              <GoldenDivider />
 
-              {/* Oracle Verse Card - Core visual area */}
-              {fortuneStick.content && fortuneStick.contentEN && (
-                <>
-                  <OracleVerseCard 
-                    content={fortuneStick.content}
-                    contentEN={fortuneStick.contentEN}
-                  />
-                  {/* Golden divider after Verse */}
-                  <GoldenDivider />
-                </>
-              )}
-
-              {/* Story_Brief_EN with Story_EN */}
-              {fortuneStick.storyBriefEN && (
-                <>
-                  <StoryBrief 
-                    storyEN={fortuneStick.storyEN || ''}
-                    storyBrief={fortuneStick.storyBriefEN} 
-                  />
-                  {/* Golden divider after Story */}
-                  <GoldenDivider />
-                </>
-              )}
-
-              {/* Detail2_EN - Core message */}
-              {fortuneStick.detail2EN && (
-                <FadeInText delay={1.3}>
+              {/* 2. User Question */}
+              {userQuestion && (
+                <FadeInText delay={0.7}>
                   <div className={`${UNIFIED_CONTAINER_WIDTH} mx-auto`}>
-                    <h3 
-                      className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-3 sm:mb-4 uppercase tracking-wider"
-                      style={{ 
-                        paddingLeft: '0px',
-                        marginLeft: '0px',
-                        textAlign: 'left',
+                    <div 
+                      className="bg-white/5 backdrop-blur-md rounded-xl p-4 sm:p-6 md:p-8 relative overflow-hidden"
+                      style={{
+                        borderLeft: '2px solid #FFD700',
+                        borderTop: '0.5px solid rgba(255, 215, 0, 0.15)',
+                        borderRight: '0.5px solid rgba(255, 215, 0, 0.15)',
+                        borderBottom: '0.5px solid rgba(255, 215, 0, 0.15)',
                       }}
                     >
-                      ORACLE'S REVELATION
-                    </h3>
+                      <div className="relative z-10 text-center">
+                        <p 
+                          className="text-white/95 text-lg sm:text-xl md:text-2xl leading-relaxed"
+                          style={{
+                            fontFamily: '"STXingkai", "Xingkai SC", "行楷", "KaiTi", "楷体", serif',
+                          }}
+                        >
+                          "{userQuestion}"
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </FadeInText>
+              )}
+
+              {/* Golden divider */}
+              {userQuestion && <GoldenDivider />}
+
+              {/* 4. Content - Oracle Verse Card */}
+              {fortuneStick.content && (
+                <FadeInText delay={0.8}>
+                  <OracleVerseCard 
+                    content={fortuneStick.content}
+                  />
+                  <GoldenDivider />
+                </FadeInText>
+              )}
+
+              {/* 5. Story + Story_Brief */}
+              {fortuneStick.storyBrief && (
+                <FadeInText delay={0.9}>
+                  <StoryBrief 
+                    story={fortuneStick.story || ''}
+                    storyBrief={fortuneStick.storyBrief} 
+                  />
+                  <GoldenDivider />
+                </FadeInText>
+              )}
+
+              {/* 6. Detail1 + Detail2 - Core message */}
+              {(fortuneStick.detail1 || fortuneStick.detail2) && (
+                <FadeInText delay={1.0}>
+                  <div className={`${UNIFIED_CONTAINER_WIDTH} mx-auto`}>
                     {/* Card with unified border style: left border only, bg-white/5 backdrop-blur-md */}
                     <div 
                       className="relative rounded-xl p-4 sm:p-6 md:p-8 bg-white/5 backdrop-blur-md"
@@ -848,27 +1158,253 @@ export default function ResultPageEN() {
                         borderLeft: '2px solid #FFD700',
                       }}
                     >
+                      {/* Title inside the card */}
+                      <h3 className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-4 sm:mb-5 uppercase tracking-wider text-left flex items-center gap-2 sm:gap-3">
+                        <RevelationIcon />
+                        启示
+                      </h3>
+                      
+                      {fortuneStick.detail1 && (
                         <p 
-                          className="text-white/90 text-base sm:text-lg leading-relaxed"
-                          style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+                          className="text-white/90 text-sm sm:text-base md:text-lg mb-4 text-left"
+                          style={{ lineHeight: '1.8' }}
                         >
-                          {fortuneStick.detail2EN}
+                          {fortuneStick.detail1}
                         </p>
+                      )}
+                      {fortuneStick.detail2 && (
+                        <p 
+                          className="text-white/90 text-sm sm:text-base md:text-lg text-left"
+                          style={{ lineHeight: '1.8' }}
+                        >
+                          {fortuneStick.detail2}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <GoldenDivider />
+                </FadeInText>
+              )}
+
+              {/* 7. AI Deep Interpretation Section */}
+              {/* Loading or Error State */}
+              {(isLoading || isWeaving) && (
+                <WeavingAnimation />
+              )}
+
+              {error && (
+                <FadeInText delay={0}>
+                  <div className={`${UNIFIED_CONTAINER_WIDTH} mx-auto`}>
+                    <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 sm:p-8 border-l-2 border-red-500">
+                      <p className="text-red-400 text-base sm:text-lg font-semibold mb-2">
+                        {error}
+                      </p>
+                      <button
+                        onClick={() => stickNumber && userQuestion && fetchInterpretation(stickNumber, userQuestion)}
+                        className="mt-4 px-6 py-2 bg-amber-400 hover:bg-amber-500 text-white font-semibold rounded-full transition-colors"
+                      >
+                        重试
+                      </button>
                     </div>
                   </div>
                 </FadeInText>
               )}
 
-              {/* Golden divider after Message */}
-              {fortuneStick.detail2EN && <GoldenDivider />}
+              {/* AI Interpretation Content */}
+              {interpretation && !isLoading && !error && (
+                <div className="space-y-8 mt-8" ref={contentRef}>
+                  {/* Core Insight */}
+                  {interpretation.insight && (
+                    <ScrollFadeIn delay={0}>
+                      <div className={`${UNIFIED_CONTAINER_WIDTH} mx-auto`}>
+                        <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 sm:p-8 border-l-2 border-[#FFD700]">
+                          <h3 className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-4 sm:mb-5 uppercase tracking-wider text-left flex items-center gap-2 sm:gap-3">
+                            <ResonanceIcon />
+                            核心洞察
+                          </h3>
+                          <p className="text-white/90 text-sm sm:text-base md:text-lg leading-relaxed" style={{ lineHeight: '1.8' }}>
+                            <HighlightedText text={interpretation.insight} />
+                          </p>
+                        </div>
+                      </div>
+                    </ScrollFadeIn>
+                  )}
 
-              {/* Items_EN Grid */}
-              {fortuneStick.itemsEN && (
-                <ItemsGrid itemsEN={fortuneStick.itemsEN} />
+                  {/* Golden divider between Core Insight and Guidance */}
+                  {interpretation.insight && (interpretation.guidance || interpretation.practice) && (
+                    <GoldenDivider />
+                  )}
+
+                  {/* Guidance and Practice - Combined */}
+                  {(interpretation.guidance || interpretation.practice) && (
+                    <ScrollFadeIn delay={0}>
+                      <div className={`${UNIFIED_CONTAINER_WIDTH} mx-auto`}>
+                        <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 sm:p-8 border-l-2 border-[#FFD700]">
+                          {interpretation.guidance && (
+                            <div>
+                              <h3 className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-4 sm:mb-5 uppercase tracking-wider text-left flex items-center gap-2 sm:gap-3">
+                                <WeavingIcon />
+                                行动指引
+                              </h3>
+                              <p className="text-white/90 text-sm sm:text-base md:text-lg leading-relaxed" style={{ lineHeight: '1.8' }}>
+                                <HighlightedText text={interpretation.guidance} />
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </ScrollFadeIn>
+                  )}
+                </div>
               )}
 
-              {/* Payment card */}
-              <PaymentCard onUnlock={handleUnlock} />
+              {/* Deep Consultation Button */}
+              {interpretation && !isLoading && !error && (
+                <FadeInText delay={2}>
+                  <div className={`${UNIFIED_CONTAINER_WIDTH} mx-auto mt-12 mb-8 flex justify-center`}>
+                    <motion.button
+                      onClick={() => setShowQRCode(true)}
+                      className="relative w-full sm:w-auto px-10 sm:px-14 md:px-18 py-5 sm:py-6 md:py-7 text-white font-bold text-lg sm:text-xl md:text-2xl rounded-full overflow-hidden transition-all duration-300"
+                      style={{
+                        background: '#6B21A8',
+                        boxShadow: '0 10px 30px rgba(107, 33, 168, 0.4), 0 5px 15px rgba(107, 33, 168, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.2)',
+                      }}
+                      whileHover={{ 
+                        scale: 1.08,
+                        boxShadow: '0 15px 40px rgba(107, 33, 168, 0.5), 0 8px 20px rgba(107, 33, 168, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                      }}
+                      whileTap={{ scale: 0.96 }}
+                    >
+                      {/* Sweep light effect from right to left */}
+                      <motion.div
+                        className="absolute inset-0 pointer-events-none overflow-hidden rounded-full"
+                        style={{
+                          zIndex: 1,
+                          background: 'linear-gradient(90deg, transparent 0%, transparent 40%, rgba(255, 255, 255, 0.3) 50%, transparent 60%, transparent 100%)',
+                          backgroundSize: '200% 100%',
+                        }}
+                        animate={{
+                          backgroundPosition: ['200% 0', '-200% 0'],
+                        }}
+                        transition={{
+                          duration: 4,
+                          repeat: Infinity,
+                          repeatDelay: 1.5,
+                          ease: 'easeInOut',
+                        }}
+                      />
+                      
+                      {/* Text - clean and clear, no shadows */}
+                      <span 
+                        className="relative z-20 font-bold flex items-center justify-center gap-2 whitespace-nowrap"
+                        style={{
+                          letterSpacing: '0.5px',
+                        }}
+                      >
+                        点击升级人工专业解读
+                      </span>
+                    </motion.button>
+                  </div>
+                </FadeInText>
+              )}
+
+              {/* WeChat QR Code Modal */}
+              {showQRCode && (
+                <AnimatePresence>
+                  <motion.div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setShowQRCode(false)}
+                    style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                      backdropFilter: 'blur(4px)',
+                    }}
+                  >
+                    <motion.div
+                      className="relative bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl"
+                      initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                      animate={{ scale: 1, opacity: 1, y: 0 }}
+                      exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Close button */}
+                      <button
+                        onClick={() => setShowQRCode(false)}
+                        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                      
+                      {/* Header with Avatar and Name */}
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          <img 
+                            src="/yinyang.png" 
+                            alt="头像" 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback if image doesn't exist
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">
+                            半夏实验室
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            深度解惑咨询
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* QR Code */}
+                      <div className="flex justify-center mb-4">
+                        <div className="w-64 h-64 bg-white rounded-lg p-3 border-2 border-gray-200 shadow-inner">
+                          <img 
+                            src="/wechat-qr.png" 
+                            alt="微信二维码" 
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              // Fallback placeholder if image doesn't exist
+                              e.currentTarget.style.display = 'none'
+                              const parent = e.currentTarget.parentElement
+                              if (parent && !parent.querySelector('.qr-placeholder')) {
+                                const placeholder = document.createElement('div')
+                                placeholder.className = 'qr-placeholder w-full h-full bg-gray-100 rounded flex items-center justify-center'
+                                placeholder.innerHTML = '<p class="text-gray-400 text-sm">[微信二维码]</p>'
+                                parent.appendChild(placeholder)
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Instruction Text */}
+                      <p className="text-gray-600 text-center mb-3 text-sm leading-relaxed">
+                        扫一扫上面的二维码图案，加我为朋友。
+                      </p>
+                      
+                      {/* Fallback Text */}
+                      <p className="text-gray-500 text-xs text-center leading-relaxed">
+                        如果二维码失效，请在微信中搜索微信号 <span className="font-mono font-semibold text-gray-700 whitespace-nowrap">goodluck-lilylily</span> 添加
+                      </p>
+                    </motion.div>
+                  </motion.div>
+                </AnimatePresence>
+              )}
+
+              {/* Compliance Statement */}
+              <FadeInText delay={2.2}>
+                <div className={`${UNIFIED_CONTAINER_WIDTH} mx-auto mt-8 mb-12`}>
+                  <p className="text-white/30 text-[10px] sm:text-xs text-center leading-relaxed">
+                    本报告由 AI 基于传统文化大数据推演，仅供心理疏导与娱乐，请相信科学，美好生活靠努力创造。
+                  </p>
+                </div>
+              </FadeInText>
             </motion.div>
           )}
         </AnimatePresence>

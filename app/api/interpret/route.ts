@@ -29,11 +29,11 @@ export async function POST(request: NextRequest) {
     const selectedModel = process.env.OPENROUTER_MODEL || MODELS[0]
     
     if (!OPENROUTER_API_KEY) {
-      // Return a mock interpretation for development
+      // Return a mock interpretation for development (in Chinese)
       return NextResponse.json({
-        resonance: `The Silk has felt your query... Under the light of ${fortuneStick.levelEN || fortuneStick.level}, the threads of your fate are beginning to shimmer. The energy of Lot #${fortuneStick.number} resonates deeply with your question. The ancient legend of ${fortuneStick.storyEN || 'the Oracle'} speaks to this moment in your journey.`,
-        weaving: `Regarding your question, the Oracle's guidance suggests a path of reflection and inner wisdom. The message reveals that ${fortuneStick.detail2EN || 'this is a time for thoughtful consideration'}. Trust in your ability to navigate this situation with grace. The ancient wisdom reminds us that every challenge carries within it the seed of growth and understanding.`,
-        ritual: `Take 10 minutes each morning this week to write down three things you're grateful for, then reflect on how this practice shifts your perspective. This mindfulness exercise will help anchor the insights you've gained.`
+        insight: `签文已感受到你的问题...在"${fortuneStick.level}"的指引下，命运的线索开始闪烁。第${fortuneStick.number}签的能量与你的问题产生了深刻共鸣。**这份签文提醒你，当前的问题背后可能隐藏着成长的机会。**`,
+        guidance: `针对你的问题，签文的指引建议你走一条反思和内在智慧的道路。**信任你以优雅的方式应对这个情况的能力。**古老的智慧提醒我们，每一个挑战都蕴含着成长和理解的种子。`,
+        practice: `本周每天早晨花10分钟写下三件你感激的事情，然后反思这个练习如何改变你的视角。`
       })
     }
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     try {
       const userPrompt = generateOraclePrompt(fortuneStick, question)
       
-      const systemPrompt = `You are the Lead Guide of "The Whispering Silk" (半夏). You are an expert in Eastern philosophy, psychological reflection, and personal growth. You use ancient wisdom and metaphors to inspire modern self-discovery, but always frame guidance in terms of psychology, mindfulness, and personal empowerment—never as supernatural, religious, or superstitious practices. Your language style is elegant, thoughtful, and deeply healing, focusing on self-awareness and emotional intelligence.`
+      const systemPrompt = `你是"关帝灵签"的智慧解读师。你精通东方哲学、心理学反思和个人成长指导。你的语调优雅、深思熟虑、富有治愈力。你使用古代故事的隐喻和智慧来启发现代自我反思，但始终以心理学、正念和个人赋能为框架——绝不涉及超自然或宗教实践。`
 
       // Try calling OpenRouter API with model fallback
       let lastError: any = null
@@ -180,8 +180,8 @@ export async function POST(request: NextRequest) {
         content = content.replace(/^```\s*/, '').replace(/\s*```$/m, '')
       }
       
-      // Try to extract JSON object if it's embedded in text
-      const jsonMatch = content.match(/\{[\s\S]*?"resonance"[\s\S]*?"weaving"[\s\S]*?"ritual"[\s\S]*?\}/)
+      // Try to extract JSON object if it's embedded in text (support both old and new field names)
+      const jsonMatch = content.match(/\{[\s\S]*?"(?:resonance|insight)"[\s\S]*?"(?:weaving|guidance)"[\s\S]*?"(?:ritual|practice)"[\s\S]*?\}/)
       if (jsonMatch) {
         content = jsonMatch[0]
       }
@@ -193,31 +193,59 @@ export async function POST(request: NextRequest) {
           hasResonance: !!parsed.resonance,
           hasWeaving: !!parsed.weaving,
           hasRitual: !!parsed.ritual,
-          resonanceType: typeof parsed.resonance,
-          resonancePreview: typeof parsed.resonance === 'string' ? parsed.resonance.substring(0, 50) : 'not a string'
+          hasInsight: !!parsed.insight,
+          hasGuidance: !!parsed.guidance,
+          hasPractice: !!parsed.practice,
+          insightType: typeof parsed.insight,
+          insightPreview: typeof parsed.insight === 'string' ? parsed.insight.substring(0, 50) : 'not a string'
         })
         
         // Clean up the parsed values - ensure they are pure text, not JSON structures
         const cleanText = (value: any, fieldName: string): string => {
           if (!value) return ''
-          if (typeof value !== 'string') return String(value)
+          if (typeof value !== 'string') {
+            // If it's not a string, convert to string
+            return String(value)
+          }
           
           let text = value.trim()
+          
+          // If empty after trim, return empty
+          if (!text) return ''
           
           // First, try to parse if it's a JSON string (nested JSON)
           if (text.startsWith('{') || text.startsWith('[')) {
             try {
-              const parsed = JSON.parse(text)
-              // If it's an object with the field we want, extract it
-              if (typeof parsed === 'object' && parsed !== null) {
-                if (parsed[fieldName] && typeof parsed[fieldName] === 'string') {
-                  text = parsed[fieldName]
-                } else if (parsed.resonance || parsed.weaving || parsed.ritual) {
-                  // It's the full JSON object, extract the right field
-                  if (fieldName === 'resonance' && parsed.resonance) text = parsed.resonance
-                  else if (fieldName === 'weaving' && parsed.weaving) text = parsed.weaving
-                  else if (fieldName === 'ritual' && parsed.ritual) text = parsed.ritual
+              const nestedParsed = JSON.parse(text)
+              // If it's an object, try to extract the actual content
+              if (typeof nestedParsed === 'object' && nestedParsed !== null) {
+                // Check for the field we want first
+                if (nestedParsed[fieldName] && typeof nestedParsed[fieldName] === 'string') {
+                  text = nestedParsed[fieldName]
+                } 
+                // Check for old field names
+                else if (fieldName === 'insight' && nestedParsed.resonance && typeof nestedParsed.resonance === 'string') {
+                  text = nestedParsed.resonance
+                }
+                else if (fieldName === 'guidance' && nestedParsed.weaving && typeof nestedParsed.weaving === 'string') {
+                  text = nestedParsed.weaving
+                }
+                else if (fieldName === 'practice' && nestedParsed.ritual && typeof nestedParsed.ritual === 'string') {
+                  text = nestedParsed.ritual
+                }
+                // If it's the full JSON object with all fields, extract the right one
+                else if (nestedParsed.insight || nestedParsed.guidance || nestedParsed.practice) {
+                  if (fieldName === 'insight' && nestedParsed.insight) text = nestedParsed.insight
+                  else if (fieldName === 'guidance' && nestedParsed.guidance) text = nestedParsed.guidance
+                  else if (fieldName === 'practice' && nestedParsed.practice) text = nestedParsed.practice
                   else text = value // Fallback to original
+                }
+                // If none of the above, try to get the first meaningful string value
+                else {
+                  const values = Object.values(nestedParsed).filter(v => typeof v === 'string' && v.length > 10)
+                  if (values.length > 0) {
+                    text = String(values[0])
+                  }
                 }
               }
             } catch {
@@ -226,21 +254,30 @@ export async function POST(request: NextRequest) {
           }
           
           // Remove any JSON structure patterns that might be embedded
-          // Remove patterns like: {"resonance": "...", "weaving": "..."}
-          text = text.replace(/\{[^}]*"resonance"[^}]*\}/gi, '')
-          text = text.replace(/\{[^}]*"weaving"[^}]*\}/gi, '')
-          text = text.replace(/\{[^}]*"ritual"[^}]*\}/gi, '')
+          // Remove patterns like: {"insight": "...", "guidance": "..."} or {"resonance": "...", "weaving": "..."}
+          text = text.replace(/\{[^}]*"(?:insight|resonance)"[^}]*\}/gi, '')
+          text = text.replace(/\{[^}]*"(?:guidance|weaving)"[^}]*\}/gi, '')
+          text = text.replace(/\{[^}]*"(?:practice|ritual)"[^}]*\}/gi, '')
           
-          // Remove field name patterns: "resonance": "..." or "weaving": "..."
-          text = text.replace(new RegExp(`"${fieldName}"\\s*:\\s*"`, 'gi'), '')
-          text = text.replace(new RegExp(`"resonance"\\s*:\\s*"`, 'gi'), '')
-          text = text.replace(new RegExp(`"weaving"\\s*:\\s*"`, 'gi'), '')
-          text = text.replace(new RegExp(`"ritual"\\s*:\\s*"`, 'gi'), '')
+          // Remove field name patterns: "insight": "..." or "resonance": "..." etc.
+          const fieldPatterns = [
+            `"${fieldName}"\\s*:\\s*"`,
+            `"insight"\\s*:\\s*"`,
+            `"guidance"\\s*:\\s*"`,
+            `"practice"\\s*:\\s*"`,
+            `"resonance"\\s*:\\s*"`,
+            `"weaving"\\s*:\\s*"`,
+            `"ritual"\\s*:\\s*"`
+          ]
           
-          // Remove JSON structure markers
+          fieldPatterns.forEach(pattern => {
+            text = text.replace(new RegExp(pattern, 'gi'), '')
+          })
+          
+          // Remove JSON structure markers more aggressively
           text = text
-            .replace(/^\s*\{[\s\S]*?"(?:resonance|weaving|ritual)"\s*:\s*"?/, '') // Remove opening JSON
-            .replace(/"?\s*,\s*"(?:resonance|weaving|ritual)"\s*:\s*"[\s\S]*$/, '') // Remove trailing fields
+            .replace(/^\s*\{[\s\S]*?"(?:insight|resonance|guidance|weaving|practice|ritual)"\s*:\s*"?/, '') // Remove opening JSON
+            .replace(/"?\s*,\s*"(?:insight|resonance|guidance|weaving|practice|ritual)"\s*:\s*"[\s\S]*$/, '') // Remove trailing fields
             .replace(/"?\s*\}[\s\S]*$/, '') // Remove closing brace
             .replace(/^["']|["']$/g, '') // Remove surrounding quotes
             .trim()
@@ -248,70 +285,93 @@ export async function POST(request: NextRequest) {
           // Remove any remaining JSON-like patterns with escaped quotes
           text = text.replace(/\\"/g, '"') // Unescape quotes
           text = text.replace(/\\n/g, '\n') // Unescape newlines
+          text = text.replace(/\\t/g, ' ') // Unescape tabs
           
           // Final cleanup: remove any remaining JSON structure
           text = text.replace(/\{[^}]*\}/g, '').trim()
+          text = text.replace(/\[[^\]]*\]/g, '').trim()
           
           // Remove any trailing JSON field references
           text = text.replace(/,\s*"[^"]+"\s*:\s*"[^"]+"\s*\}/g, '')
           text = text.replace(/\}\s*$/, '')
+          text = text.replace(/\{\s*$/, '')
+          
+          // Remove field names that might appear as plain text
+          text = text.replace(/^\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*:\s*/i, '')
           
           return text.trim()
         }
         
-        let cleanResonance = cleanText(parsed.resonance, 'resonance')
-        let cleanWeaving = cleanText(parsed.weaving, 'weaving')
-        let cleanRitual = cleanText(parsed.ritual, 'ritual')
+        // Extract and clean fields - prioritize new field names, fallback to old ones
+        let cleanInsight = ''
+        let cleanGuidance = ''
+        let cleanPractice = ''
+        
+        // Try new field names first
+        if (parsed.insight) {
+          cleanInsight = cleanText(parsed.insight, 'insight')
+        } else if (parsed.resonance) {
+          cleanInsight = cleanText(parsed.resonance, 'resonance')
+        }
+        
+        if (parsed.guidance) {
+          cleanGuidance = cleanText(parsed.guidance, 'guidance')
+        } else if (parsed.weaving) {
+          cleanGuidance = cleanText(parsed.weaving, 'weaving')
+        }
+        
+        if (parsed.practice) {
+          cleanPractice = cleanText(parsed.practice, 'practice')
+        } else if (parsed.ritual) {
+          cleanPractice = cleanText(parsed.ritual, 'ritual')
+        }
         
         // Final validation: ensure no JSON structures remain
-        // If any field still looks like JSON, try to extract the actual text
         const finalClean = (text: string): string => {
           if (!text) return text
-          // If it still starts with { and contains field names, it's likely nested JSON
-          if (text.trim().startsWith('{') && (text.includes('"resonance"') || text.includes('"weaving"') || text.includes('"ritual"'))) {
-            try {
-              const reParsed = JSON.parse(text)
-              // Try to extract the actual content
-              if (typeof reParsed === 'object') {
-                // If it's the full object, we already handled it in cleanText
-                // But if it's still here, try to get the first string value
-                const values = Object.values(reParsed).filter(v => typeof v === 'string' && v.length > 10)
-                if (values.length > 0) {
-                  return String(values[0])
-                }
-              }
-            } catch {
-              // If parsing fails, remove JSON structure manually
-              text = text.replace(/\{[^}]*"resonance"[^}]*\}/gi, '')
-              text = text.replace(/\{[^}]*"weaving"[^}]*\}/gi, '')
-              text = text.replace(/\{[^}]*"ritual"[^}]*\}/gi, '')
-              text = text.replace(/["']\s*:\s*["']/g, '')
-              text = text.replace(/[{}]/g, '')
+          
+          // If it still looks like JSON, try one more aggressive cleanup
+          if (text.trim().startsWith('{') || text.includes('"insight"') || text.includes('"guidance"') || text.includes('"practice"') || 
+              text.includes('"resonance"') || text.includes('"weaving"') || text.includes('"ritual"')) {
+            // Try to extract text between quotes after field names
+            const quoteMatch = text.match(/:\s*"([^"]*(?:"[^"]*")*[^"]*)"/)
+            if (quoteMatch && quoteMatch[1]) {
+              text = quoteMatch[1]
+            } else {
+              // Remove all JSON structure
+              text = text.replace(/\{[^}]*\}/g, '')
+              text = text.replace(/["']/g, '')
+              text = text.replace(/^\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*:\s*/i, '')
             }
           }
+          
+          // Final pass: remove any remaining field name references
+          text = text.replace(/^\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*[:：]\s*/i, '')
+          text = text.replace(/\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*[:：]\s*/gi, ' ')
+          
           return text.trim()
         }
         
-        cleanResonance = finalClean(cleanResonance)
-        cleanWeaving = finalClean(cleanWeaving)
-        cleanRitual = finalClean(cleanRitual)
+        cleanInsight = finalClean(cleanInsight)
+        cleanGuidance = finalClean(cleanGuidance)
+        cleanPractice = finalClean(cleanPractice)
         
         console.log('Cleaned fields:', {
-          resonanceLength: cleanResonance.length,
-          weavingLength: cleanWeaving.length,
-          ritualLength: cleanRitual.length,
-          resonancePreview: cleanResonance.substring(0, 100),
-          weavingPreview: cleanWeaving.substring(0, 100),
-          ritualPreview: cleanRitual.substring(0, 100)
+          insightLength: cleanInsight.length,
+          guidanceLength: cleanGuidance.length,
+          practiceLength: cleanPractice.length,
+          insightPreview: cleanInsight.substring(0, 100),
+          guidancePreview: cleanGuidance.substring(0, 100),
+          practicePreview: cleanPractice.substring(0, 100)
         })
         
-        // Check if we have at least resonance (most important)
-        if (cleanResonance && cleanResonance.length > 10) {
-          // Return with defaults for missing fields
+        // Check if we have at least insight/resonance (most important)
+        if (cleanInsight && cleanInsight.length > 10) {
+          // Return with new field names, with fallbacks for missing fields
           return NextResponse.json({
-            resonance: cleanResonance,
-            weaving: cleanWeaving && cleanWeaving.length > 10 ? cleanWeaving : 'The Oracle weaves its wisdom through the threads of fate...',
-            ritual: cleanRitual && cleanRitual.length > 10 ? cleanRitual : 'Take a moment of quiet reflection to connect with this guidance.'
+            insight: cleanInsight,
+            guidance: cleanGuidance && cleanGuidance.length > 10 ? cleanGuidance : '签文的智慧提醒我们，每一个挑战都蕴含着成长的机会。信任你内在的智慧，以优雅的方式应对当前的情况。',
+            practice: cleanPractice && cleanPractice.length > 10 ? cleanPractice : '本周每天花10分钟静心反思，写下你的感受和想法，这将帮助你更好地理解当前的情况。'
           })
         }
       } catch (e) {
@@ -322,25 +382,25 @@ export async function POST(request: NextRequest) {
         if (content.length > 100) {
           const parts = content.split(/\n\n+/)
           return NextResponse.json({
-            resonance: parts[0] || content.substring(0, Math.floor(content.length / 3)),
-            weaving: parts[1] || content.substring(Math.floor(content.length / 3), Math.floor(content.length * 2 / 3)),
-            ritual: parts[2] || content.substring(Math.floor(content.length * 2 / 3)) || 'Take a moment of quiet reflection to connect with this guidance.'
+            insight: parts[0] || content.substring(0, Math.floor(content.length / 3)),
+            guidance: parts[1] || content.substring(Math.floor(content.length / 3), Math.floor(content.length * 2 / 3)),
+            practice: parts[2] || content.substring(Math.floor(content.length * 2 / 3)) || '本周每天花10分钟静心反思，写下你的感受和想法。'
           })
         }
         
-        // Fallback: return content as resonance
+        // Fallback: return content as insight
         return NextResponse.json({
-          resonance: content,
-          weaving: 'The Oracle continues to weave its wisdom through the threads of your fate...',
-          ritual: 'Take a moment of quiet reflection to connect with this guidance.'
+          insight: content,
+          guidance: '签文的智慧提醒我们，每一个挑战都蕴含着成长的机会。信任你内在的智慧，以优雅的方式应对当前的情况。',
+          practice: '本周每天花10分钟静心反思，写下你的感受和想法，这将帮助你更好地理解当前的情况。'
         })
       }
 
       // If parsing succeeded but structure is wrong
       return NextResponse.json({
-        resonance: content || 'The energy resonates with your question...',
-        weaving: 'The Oracle weaves its wisdom through the threads of fate...',
-        ritual: 'Take a moment of quiet reflection to connect with this guidance.'
+        insight: content || '签文已感受到你的问题，能量正在与你的问题产生共鸣...',
+        guidance: '签文的智慧提醒我们，每一个挑战都蕴含着成长的机会。信任你内在的智慧，以优雅的方式应对当前的情况。',
+        practice: '本周每天花10分钟静心反思，写下你的感受和想法，这将帮助你更好地理解当前的情况。'
       })
     } catch (promptError) {
       console.error('Error generating prompt or calling API:', promptError)

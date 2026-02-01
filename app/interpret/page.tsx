@@ -370,7 +370,7 @@ export default function InterpretPage() {
           className="inline-flex items-center gap-2 text-white/70 hover:text-amber-400 transition-colors text-sm sm:text-base mb-6"
         >
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-          <span>Back</span>
+          <span>返回</span>
         </Link>
 
         {/* Content area for image capture */}
@@ -390,7 +390,7 @@ export default function InterpretPage() {
                 hyphens: 'auto',
               }}
             >
-              Deep Interpretation
+              AI深度解读
             </h1>
           </motion.div>
 
@@ -412,7 +412,7 @@ export default function InterpretPage() {
               >
                 <div className="relative z-10">
                   <p className="text-white/70 text-sm sm:text-base mb-3">
-                    You sought guidance on:
+                    您所求问：
                   </p>
                   <p 
                     className="text-white/95 text-lg sm:text-xl md:text-2xl lg:text-3xl leading-relaxed italic"
@@ -433,7 +433,7 @@ export default function InterpretPage() {
                 <div className="flex items-center gap-4 mb-4">
                   <div className="px-4 py-2 rounded-full bg-white/10 border border-amber-400/30">
                     <span className="text-amber-400 font-bold text-lg">
-                      Lot #{fortuneStick.number}
+                      第 {fortuneStick.number} 签
                     </span>
                   </div>
                   <span 
@@ -499,12 +499,12 @@ export default function InterpretPage() {
                     {error}
                   </p>
                   <div className="text-white/60 text-sm">
-                    <p className="mb-2">Please check:</p>
+                    <p className="mb-2">请检查：</p>
                     <ul className="list-disc list-inside mt-2 space-y-1">
-                      <li>Your API key is correctly set in .env.local</li>
-                      <li>You have restarted the development server after adding the API key</li>
-                      <li>Your internet connection is working</li>
-                      <li>Check the server terminal for detailed error messages</li>
+                      <li>您的 API 密钥是否正确设置在 .env.local 中</li>
+                      <li>添加 API 密钥后是否已重启开发服务器</li>
+                      <li>您的网络连接是否正常</li>
+                      <li>查看服务器终端以获取详细错误信息</li>
                     </ul>
                   </div>
                 </div>
@@ -512,7 +512,7 @@ export default function InterpretPage() {
                   onClick={() => fortuneStick && userQuestion && fetchInterpretation(fortuneStick.number, userQuestion)}
                   className="mt-4 px-6 py-2 bg-amber-400 hover:bg-amber-500 text-white font-semibold rounded-full transition-colors"
                 >
-                  Try Again
+                  重试
                 </button>
               </div>
             </motion.div>
@@ -524,7 +524,7 @@ export default function InterpretPage() {
                   <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 sm:p-8 border-l-2 border-[#FFD700]">
                     <h3 className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-4 sm:mb-5 uppercase tracking-wider text-left flex items-center gap-2 sm:gap-3">
                       <ResonanceIcon />
-                      The Resonance
+                      共鸣
                     </h3>
                     <p className="text-white/90 text-sm sm:text-base md:text-lg leading-relaxed" style={{ lineHeight: '1.8' }}>
                       <HighlightedText text={interpretation.resonance} />
@@ -562,7 +562,7 @@ export default function InterpretPage() {
                   >
                     <h3 className="text-amber-300 text-sm sm:text-base font-semibold mb-5 uppercase tracking-wider text-left relative z-10 flex items-center gap-3">
                       <WeavingIcon />
-                      The Weaving
+                      编织
                     </h3>
                     <div className="text-white/90 text-sm sm:text-base md:text-lg relative z-10" style={{ lineHeight: '1.8' }}>
                       <div className="whitespace-pre-wrap leading-relaxed">
@@ -583,7 +583,7 @@ export default function InterpretPage() {
                     <div className="relative z-10">
                       <h3 className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-4 sm:mb-5 uppercase tracking-wider text-left flex items-center gap-2 sm:gap-3">
                         <RitualIcon />
-                        The Practice
+                        实践
                       </h3>
                       <p 
                         className="text-white/95 text-base sm:text-lg md:text-xl leading-relaxed italic"
@@ -666,7 +666,7 @@ export default function InterpretPage() {
                     } catch (error) {
                       console.error('Error saving image:', error)
                       setIsSavingImage(false)
-                      alert('Failed to save image. Please try again.')
+                      alert('保存图片失败，请重试。')
                     }
                   }}
                   disabled={isSavingImage}
@@ -707,10 +707,10 @@ export default function InterpretPage() {
                       <>
                         <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
                         <span className="text-amber-400 font-semibold text-lg">
-                          Generating Image...
+                          正在生成图片...
                         </span>
                         <p className="text-white/40 text-xs mt-1">
-                          Please wait
+                          请稍候
                         </p>
                       </>
                     ) : isSaved ? (
@@ -718,11 +718,11 @@ export default function InterpretPage() {
                         <div className="flex items-center gap-3">
                           <Check className="w-5 h-5 text-green-400" />
                           <span className="text-green-400 font-semibold text-lg">
-                            Image Saved!
+                            图片已保存！
                           </span>
                         </div>
                         <p className="text-white/50 text-xs mt-1">
-                          Downloaded to your device & saved to collection
+                          已下载到您的设备并保存到收藏
                         </p>
                       </>
                     ) : (
@@ -736,11 +736,11 @@ export default function InterpretPage() {
                               fontFamily: '"Playfair Display", "Cormorant Garamond", Georgia, serif',
                             }}
                           >
-                            Save Reading
+                            保存解读
                           </span>
                         </div>
                         <p className="text-white/40 text-xs mt-1">
-                          Download as image & save to collection
+                          下载为图片并保存到收藏
                         </p>
                       </>
                     )}
@@ -758,7 +758,7 @@ export default function InterpretPage() {
                   href="/history"
                   className="text-white/50 hover:text-white/80 text-sm transition-colors duration-200 underline underline-offset-4"
                 >
-                  View My Collection ({typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('savedInterpretations') || '[]').length) : 0})
+                  查看我的收藏 ({typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('savedInterpretations') || '[]').length) : 0})
                 </Link>
               </div>
             </ScrollFadeIn>

@@ -36,16 +36,7 @@ export async function middleware(request: NextRequest) {
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // Protected routes - redirect to home if not authenticated
-  if (request.nextUrl.pathname.startsWith('/interpret') && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/result-en'
-    return NextResponse.redirect(url)
-  }
+  // Authentication removed - no login required for Chinese users
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
   // creating a new response object with NextResponse.next() make sure to:

@@ -51,6 +51,56 @@ function ParallaxBackground() {
   )
 }
 
+// Ambient particles - tiny golden particles slowly rising (like stars)
+function AmbientParticles() {
+  const particleCount = 40
+  
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      {[...Array(particleCount)].map((_, i) => {
+        const startX = Math.random() * 100 // Random horizontal position
+        const duration = 15 + Math.random() * 10 // 15-25 seconds
+        const delay = Math.random() * 5 // Random delay
+        const size = 2 + Math.random() * 4 // 2-6px
+        const horizontalDrift = (Math.random() - 0.5) * 50 // Slight horizontal drift
+        const glowSize = size * 2 // Larger glow for visibility
+        
+        return (
+          <motion.div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              width: `${size}px`,
+              height: `${size}px`,
+              left: `${startX}%`,
+              bottom: '0%',
+              background: 'radial-gradient(circle, rgba(255, 215, 0, 1) 0%, rgba(255, 200, 0, 0.8) 40%, rgba(255, 165, 0, 0.5) 70%, transparent 100%)',
+              boxShadow: `0 0 ${glowSize}px rgba(255, 215, 0, 0.9), 0 0 ${glowSize * 1.5}px rgba(255, 215, 0, 0.5)`,
+              filter: 'blur(0.5px)',
+            }}
+            initial={{
+              opacity: 0,
+              y: 0,
+              x: 0,
+            }}
+            animate={{
+              opacity: [0, 0.8, 1, 0.9, 0.7, 0],
+              y: -1200, // Move up and out of view
+              x: horizontalDrift,
+            }}
+            transition={{
+              duration: duration,
+              repeat: Infinity,
+              ease: 'linear',
+              delay: delay,
+            }}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
 export default function AskPage() {
   const [question, setQuestion] = useState('')
   const [isFocused, setIsFocused] = useState(false)
@@ -60,18 +110,23 @@ export default function AskPage() {
 
   // Suggested questions
   const suggestedQuestions = [
-    "Does he/she actually like me?",
-    "Is it time for me to change my job?",
-    "How can I attract the right person?",
-    "Should I stay or should I go?",
-    "What's holding me back from being happy?",
-    "Should I go ahead with this choice?",
-    "Will this plan work out in the end?",
+    "TA喜欢我吗？",
+    "我该不该做这个选择？",
+    "现在适合换工作吗？",
+    "我们有复合的可能吗？",
   ]
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (question.trim()) {
+      // 检查兑换码是否已验证
+      const redeemCodeValidated = sessionStorage.getItem('redeemCodeValidated')
+      if (!redeemCodeValidated) {
+        alert('请先在首页输入并验证兑换码')
+        window.location.href = '/'
+        return
+      }
+      
       // Store question in sessionStorage
       sessionStorage.setItem('userQuestion', question.trim())
       // Navigate to toss page
@@ -116,6 +171,9 @@ export default function AskPage() {
     <main className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12 lg:py-16 relative overflow-hidden">
       {/* Background with parallax effect */}
       <ParallaxBackground />
+      
+      {/* Ambient particles - stars floating upward */}
+      <AmbientParticles />
       
       {/* Additional animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -195,21 +253,21 @@ export default function AskPage() {
         </motion.div>
       )}
 
-      <div className="max-w-2xl w-full relative z-10 px-2 sm:px-0">
+      <div className="max-w-2xl w-full relative z-10 px-4 sm:px-6 md:px-0">
         {/* Back button */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-4 sm:mb-6"
+          className="mb-6 sm:mb-8"
         >
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-white/70 hover:text-mystic-purple-glow transition-colors text-sm sm:text-base touch-target"
+            className="inline-flex items-center gap-2 text-white/70 hover:text-mystic-purple-glow transition-colors text-sm sm:text-base py-2 px-2 -ml-2"
             style={{ minHeight: '44px', minWidth: '44px' }}
           >
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span>Back</span>
+            <ArrowLeft className="w-5 h-5 sm:w-5 sm:h-5" />
+            <span>返回</span>
           </Link>
         </motion.div>
 
@@ -218,14 +276,14 @@ export default function AskPage() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="space-y-6 sm:space-y-8"
+          className="space-y-6 sm:space-y-7 md:space-y-8 lg:space-y-10"
         >
           {/* Title */}
-          <div className="text-center space-y-2 sm:space-y-3 px-2">
+          <div className="text-center space-y-3 sm:space-y-4">
             <motion.h1
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight"
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight px-2"
             >
-              What weighs on your heart?
+              请输入您想了解的问题
             </motion.h1>
           </div>
 
@@ -234,9 +292,9 @@ export default function AskPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="text-xs sm:text-sm text-white/60 text-center mb-4"
+            className="text-xs sm:text-sm text-white/60 text-center mb-6 sm:mb-8 px-2 leading-relaxed"
           >
-            Readings are for reflection and inspiration only, not professional advice.
+            基于传统文化的智慧参考，请理性思考，不构成任何专业建议。
           </motion.p>
 
           {/* Form */}
@@ -245,7 +303,7 @@ export default function AskPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="space-y-4 sm:space-y-6"
+            className="space-y-4 sm:space-y-5 md:space-y-6"
           >
             {/* Input and Button Row */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
@@ -258,8 +316,8 @@ export default function AskPage() {
                   onChange={(e) => setQuestion(e.target.value)}
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
-                  placeholder="Enter your question here..."
-                  className="w-full px-4 sm:px-5 py-3.5 sm:py-4 bg-white/10 backdrop-blur-md border-2 rounded-xl sm:rounded-2xl text-white placeholder-white/40 focus:outline-none text-base sm:text-base relative z-10 min-h-[44px]"
+                  placeholder="请输入您想了解的问题..."
+                  className="w-full px-4 sm:px-5 md:px-6 py-3.5 sm:py-4 md:py-5 bg-white/10 backdrop-blur-md border-2 rounded-xl sm:rounded-2xl text-white placeholder-white/40 focus:outline-none text-base sm:text-lg relative z-10 min-h-[52px] sm:min-h-[56px] md:min-h-[60px]"
                   animate={{
                     borderColor: isFocused 
                       ? ['rgba(168, 85, 247, 0.6)', 'rgba(168, 85, 247, 0.9)', 'rgba(168, 85, 247, 0.6)']
@@ -294,7 +352,7 @@ export default function AskPage() {
               <motion.button
                 type="submit"
                 disabled={!question.trim()}
-                className="group relative z-10 px-6 sm:px-8 py-3.5 sm:py-4 rounded-full bg-gradient-to-r from-mystic-purple via-mystic-indigo to-mystic-violet text-white font-semibold text-base sm:text-base shadow-lg transition-all duration-300 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-h-[44px] w-full sm:w-auto"
+                className="group relative z-10 px-6 sm:px-8 md:px-10 lg:px-12 py-3.5 sm:py-4 md:py-5 rounded-full bg-gradient-to-r from-mystic-purple via-mystic-indigo to-mystic-violet text-white font-semibold text-base sm:text-lg md:text-xl shadow-lg transition-all duration-300 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-h-[52px] sm:min-h-[56px] md:min-h-[60px] w-full sm:w-auto flex items-center justify-center"
                 whileHover={question.trim() ? "pulse" : {}}
                 variants={{
                   pulse: {
@@ -319,7 +377,7 @@ export default function AskPage() {
                 {/* Base gradient background */}
                 <div className="absolute inset-0 rounded-full bg-gradient-to-r from-mystic-purple via-mystic-indigo to-mystic-violet" />
                 
-                {/* Horizontal sweep light effect - Right to left, more visible */}
+                {/* Horizontal sweep light effect - Left to right */}
                 <motion.div
                   className="absolute inset-0 rounded-full overflow-hidden"
                 >
@@ -332,10 +390,10 @@ export default function AskPage() {
                       height: '100%',
                     }}
                     animate={{
-                      x: ['100%', '-200%'],
+                      x: ['-200%', '100%'],
                     }}
                     transition={{
-                      duration: 4,
+                      duration: 2,
                       repeat: Infinity,
                       ease: 'linear',
                       repeatType: 'loop',
@@ -350,10 +408,10 @@ export default function AskPage() {
                       height: '100%',
                     }}
                     animate={{
-                      x: ['100%', '-200%'],
+                      x: ['-200%', '100%'],
                     }}
                     transition={{
-                      duration: 4,
+                      duration: 2,
                       repeat: Infinity,
                       ease: 'linear',
                       repeatType: 'loop',
@@ -364,7 +422,7 @@ export default function AskPage() {
                 
                 {/* Text overlay */}
                 <div className="relative z-10 flex items-center gap-2 sm:gap-3">
-                  <span>Ask</span>
+                  <span>开始对话</span>
                   <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                 </div>
                 
@@ -383,9 +441,9 @@ export default function AskPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.7 }}
-              className="text-[10px] sm:text-xs text-white/40 text-center leading-relaxed"
+              className="text-xs sm:text-sm text-white/50 text-center leading-relaxed px-2 mt-4 sm:mt-5"
             >
-              Your questions are sacred and private. We do not store your personal secrets.
+              您的问题将仅用于生成个性化解读，我们承诺不会存储或泄露您的任何个人信息。
             </motion.p>
 
             {/* Suggested Questions */}
@@ -393,17 +451,17 @@ export default function AskPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
-              className="space-y-2 sm:space-y-3"
+              className="space-y-3 sm:space-y-4 mt-6 sm:mt-8"
             >
-              <p className="text-xs sm:text-sm text-white/60 mb-2">Suggested questions:</p>
-              <div className="flex flex-col gap-2">
+              <p className="text-sm sm:text-base text-white/70 mb-3 sm:mb-4 font-medium">推荐问题：</p>
+              <div className="flex flex-col gap-3 sm:gap-3.5">
                 {suggestedQuestions.map((suggested, index) => (
                   <motion.button
                     key={index}
                     ref={(el) => { buttonRefs.current[index] = el }}
                     type="button"
                     onClick={() => handleSuggestedClick(suggested, index)}
-                    className="text-left px-4 py-3 sm:py-3.5 bg-white/5 hover:bg-white/10 active:bg-white/15 border border-mystic-purple/30 hover:border-mystic-purple-glow/50 rounded-lg text-white/80 hover:text-white text-sm sm:text-base transition-all duration-300 min-h-[44px] w-full"
+                    className="text-left px-5 sm:px-6 md:px-7 py-4 sm:py-4.5 md:py-5 bg-white/5 hover:bg-white/10 active:bg-white/15 border border-mystic-purple/30 hover:border-mystic-purple-glow/50 rounded-xl sm:rounded-2xl text-white/90 hover:text-white text-base sm:text-lg md:text-xl transition-all duration-300 min-h-[56px] sm:min-h-[60px] md:min-h-[64px] w-full font-medium"
                     whileHover={{ scale: 1.02, x: 4 }}
                     whileTap={{ scale: 0.98 }}
                   >

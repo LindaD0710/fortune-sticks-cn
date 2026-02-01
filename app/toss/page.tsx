@@ -641,7 +641,7 @@ export default function TossPage() {
             style={{ minHeight: '44px', minWidth: '44px' }}
           >
             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span>Back</span>
+            <span>返回</span>
           </Link>
         </motion.div>
 
@@ -659,7 +659,7 @@ export default function TossPage() {
               <motion.h1
                 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight"
               >
-                Draw Your Lot
+                摇签求问
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0 }}
@@ -667,7 +667,7 @@ export default function TossPage() {
                 transition={{ duration: 0.8, delay: 0.4 }}
                 className="text-sm sm:text-base md:text-lg text-white/80"
               >
-                Focus on your question, then shake or tap to draw
+                请集中精力，心中默念你的问题
               </motion.p>
             </div>
 
@@ -845,12 +845,12 @@ export default function TossPage() {
                   whileTap={!isDrawing ? { scale: 0.95 } : {}}
                 >
                   <div className="relative z-10 flex items-center gap-2">
-                    <span>Shake to Draw</span>
+                    <span>开始摇签</span>
                     <Sparkles className="w-4 h-4" />
                   </div>
                 </motion.button>
                 <p className="text-xs sm:text-sm text-white/60 mt-4 text-center">
-                  Tap the container or click the button above
+                  点击签筒即可开始摇签
                 </p>
               </motion.div>
             )}
@@ -1011,9 +1011,8 @@ export default function TossPage() {
                 {/* Inner glow */}
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-yellow-200/40 to-transparent" />
                 <div className="text-center relative z-10">
-                  <p className="text-amber-900 text-sm sm:text-base mb-2 font-medium">Lot</p>
                   <p className="text-amber-900 text-5xl sm:text-6xl md:text-7xl font-bold">
-                    #{drawnStick}
+                    第 {drawnStick} 签
                   </p>
                 </div>
               </div>
