@@ -670,13 +670,6 @@ export async function POST(request: NextRequest) {
           practice: '本周每天花10分钟静心反思，写下你的感受和想法，这将帮助你更好地理解当前的情况。'
         })
       }
-
-      // If parsing succeeded but structure is wrong
-      return NextResponse.json({
-        insight: content || '签文已感受到你的问题，能量正在与你的问题产生共鸣...',
-        guidance: '签文的智慧提醒我们，每一个挑战都蕴含着成长的机会。信任你内在的智慧，以优雅的方式应对当前的情况。',
-        practice: '本周每天花10分钟静心反思，写下你的感受和想法，这将帮助你更好地理解当前的情况。'
-      })
     } catch (promptError) {
       console.error('Error generating prompt or calling API:', promptError)
       return NextResponse.json(
