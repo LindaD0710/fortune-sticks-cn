@@ -2,23 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateOraclePrompt } from '@/lib/ai-prompt'
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    const { question, fortuneStick } = body
+  const body = await request.json()
+  const { question, fortuneStick } = body
 
-    if (!question || !fortuneStick) {
-      return NextResponse.json(
-        { error: 'Missing required parameters' },
-        { status: 400 }
-      )
-    }
+  if (!question || !fortuneStick) {
+    return NextResponse.json(
+      { error: 'Missing required parameters' },
+      { status: 400 }
+    )
+  }
 
-    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || ''
-    
-    // Model configuration - supports fallback if primary model is unavailable
-    // Try models in order: Claude 3.5 Sonnet -> GPT-4 -> DeepSeek -> GPT-3.5 Turbo
-    // DeepSeek is added as it's widely available and cost-effective
-    const MODELS = [
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || ''
+  
+  // Model configuration - supports fallback if primary model is unavailable
+  // Try models in order: Claude 3.5 Sonnet -> GPT-4 -> DeepSeek -> GPT-3.5 Turbo
+  // DeepSeek is added as it's widely available and cost-effective
+  const MODELS = [
       'anthropic/claude-3.5-sonnet',
       'openai/gpt-4',
       'openai/gpt-4-turbo',
@@ -26,19 +25,19 @@ export async function POST(request: NextRequest) {
       'deepseek/deepseek-coder', // DeepSeek Coder - alternative
       'openai/gpt-3.5-turbo',
     ]
-    const selectedModel = process.env.OPENROUTER_MODEL || MODELS[0]
-    
-    if (!OPENROUTER_API_KEY) {
-      // Return a mock interpretation for development (in Chinese)
-      return NextResponse.json({
-        insight: `签文已感受到你的问题...在"${fortuneStick.level}"的指引下，命运的线索开始闪烁。第${fortuneStick.number}签的能量与你的问题产生了深刻共鸣。**这份签文提醒你，当前的问题背后可能隐藏着成长的机会。**`,
-        guidance: `针对你的问题，签文的指引建议你走一条反思和内在智慧的道路。**信任你以优雅的方式应对这个情况的能力。**古老的智慧提醒我们，每一个挑战都蕴含着成长和理解的种子。`,
-        practice: `本周每天早晨花10分钟写下三件你感激的事情，然后反思这个练习如何改变你的视角。`
-      })
-    }
+  const selectedModel = process.env.OPENROUTER_MODEL || MODELS[0]
+  
+  if (!OPENROUTER_API_KEY) {
+    // Return a mock interpretation for development (in Chinese)
+    return NextResponse.json({
+      insight: `签文已感受到你的问题...在"${fortuneStick.level}"的指引下，命运的线索开始闪烁。第${fortuneStick.number}签的能量与你的问题产生了深刻共鸣。**这份签文提醒你，当前的问题背后可能隐藏着成长的机会。**`,
+      guidance: `针对你的问题，签文的指引建议你走一条反思和内在智慧的道路。**信任你以优雅的方式应对这个情况的能力。**古老的智慧提醒我们，每一个挑战都蕴含着成长和理解的种子。`,
+      practice: `本周每天早晨花10分钟写下三件你感激的事情，然后反思这个练习如何改变你的视角。`
+    })
+  }
 
-    // Generate prompt using the prompt generator
-    try {
+  // Generate prompt using the prompt generator
+  try {
       const userPrompt = generateOraclePrompt(fortuneStick, question)
       
       const systemPrompt = `你是"关帝灵签"的智慧解读师。你精通东方哲学、心理学反思和个人成长指导。你的语调优雅、深思熟虑、富有治愈力，有文学性和画面感。你使用古代故事的隐喻和智慧来启发现代自我反思，但始终以心理学、正念和个人赋能为框架——绝不涉及超自然或宗教实践。
