@@ -297,6 +297,7 @@ export async function POST(request: NextRequest) {
       
       // Continue with parsed result (either from successful parse or extraction)
       // Clean up the parsed values - ensure they are pure text, not JSON structures
+      {
         const cleanText = (value: any, fieldName: string): string => {
           if (!value) return ''
           if (typeof value !== 'string') {
@@ -647,6 +648,7 @@ export async function POST(request: NextRequest) {
             practice: cleanPractice && cleanPractice.length > 10 ? cleanPractice : '本周每天花10分钟静心反思，写下你的感受和想法，这将帮助你更好地理解当前的情况。'
           })
         }
+      } // Close the scope block started at line 298
       } catch (e) {
         // If not JSON, try to extract meaningful content
         console.warn('Failed to parse JSON response, content:', content.substring(0, 200))
