@@ -343,24 +343,63 @@ export async function POST(request: NextRequest) {
         const finalClean = (text: string): string => {
           if (!text) return text
           
+          // First, try to parse if the entire text is a JSON object
+          if (text.trim().startsWith('{') && text.trim().endsWith('}')) {
+            try {
+              const parsed = JSON.parse(text.trim())
+              // If it's an object, try to extract the actual content
+              if (typeof parsed === 'object' && parsed !== null) {
+                // Try to find the actual content field
+                if (parsed.insight && typeof parsed.insight === 'string') {
+                  text = parsed.insight
+                } else if (parsed.guidance && typeof parsed.guidance === 'string') {
+                  text = parsed.guidance
+                } else if (parsed.practice && typeof parsed.practice === 'string') {
+                  text = parsed.practice
+                } else if (parsed.resonance && typeof parsed.resonance === 'string') {
+                  text = parsed.resonance
+                } else if (parsed.weaving && typeof parsed.weaving === 'string') {
+                  text = parsed.weaving
+                } else if (parsed.ritual && typeof parsed.ritual === 'string') {
+                  text = parsed.ritual
+                } else {
+                  // Get the first string value
+                  const values = Object.values(parsed).filter(v => typeof v === 'string' && v.length > 10)
+                  if (values.length > 0) {
+                    text = String(values[0])
+                  }
+                }
+              }
+            } catch {
+              // Not valid JSON, continue with other cleanup
+            }
+          }
+          
           // If it still looks like JSON, try one more aggressive cleanup
           if (text.trim().startsWith('{') || text.includes('"insight"') || text.includes('"guidance"') || text.includes('"practice"') || 
               text.includes('"resonance"') || text.includes('"weaving"') || text.includes('"ritual"')) {
-            // Try to extract text between quotes after field names
-            const quoteMatch = text.match(/:\s*"([^"]*(?:"[^"]*")*[^"]*)"/)
+            // Try to extract text between quotes after field names (handle escaped quotes)
+            const quoteMatch = text.match(/:\s*"((?:[^"\\]|\\.)*)"/)
             if (quoteMatch && quoteMatch[1]) {
-              text = quoteMatch[1]
+              text = quoteMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
             } else {
-              // Remove all JSON structure
-              text = text.replace(/\{[^}]*\}/g, '')
+              // Remove all JSON structure more aggressively
+              text = text.replace(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g, '')
               text = text.replace(/["']/g, '')
               text = text.replace(/^\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*:\s*/i, '')
             }
           }
           
+          // Remove any remaining JSON-like patterns
+          text = text.replace(/\{[^}]*\}/g, '')
+          text = text.replace(/\[[^\]]*\]/g, '')
+          
           // Final pass: remove any remaining field name references
           text = text.replace(/^\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*[:：]\s*/i, '')
           text = text.replace(/\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*[:：]\s*/gi, ' ')
+          
+          // Remove any remaining JSON field patterns like "insight": or "guidance":
+          text = text.replace(/"\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*"\s*[:：]\s*/gi, '')
           
           return text.trim()
         }
