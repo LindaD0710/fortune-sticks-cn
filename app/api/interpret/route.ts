@@ -194,9 +194,16 @@ export async function POST(request: NextRequest) {
       }
       
       // Try to extract JSON object if it's embedded in text (support both old and new field names)
+      // Use multiline matching to handle JSON that spans multiple lines
       const jsonMatch = content.match(/\{[\s\S]*?"(?:resonance|insight)"[\s\S]*?"(?:weaving|guidance)"[\s\S]*?"(?:ritual|practice)"[\s\S]*?\}/)
       if (jsonMatch) {
         content = jsonMatch[0]
+      } else {
+        // Also try to match if only one or two fields are present
+        const partialJsonMatch = content.match(/\{[\s\S]*?"(?:resonance|insight|weaving|guidance|ritual|practice)"[\s\S]*?\}/)
+        if (partialJsonMatch) {
+          content = partialJsonMatch[0]
+        }
       }
       
       // Try to parse JSON response
@@ -225,6 +232,41 @@ export async function POST(request: NextRequest) {
           
           // If empty after trim, return empty
           if (!text) return ''
+          
+          // URGENT FIX: If text starts with JSON structure like { "insight": "...", extract immediately
+          // This handles cases where the entire field value is a JSON string (including multiline)
+          if (text.trim().startsWith('{') && (text.includes('"insight"') || text.includes('"guidance"') || text.includes('"practice"') || 
+              text.includes('"resonance"') || text.includes('"weaving"') || text.includes('"ritual"'))) {
+            // Try to parse as JSON first (handles multiline JSON)
+            try {
+              const jsonParsed = JSON.parse(text)
+              if (typeof jsonParsed === 'object' && jsonParsed !== null) {
+                // Extract the field we want
+                if (jsonParsed[fieldName] && typeof jsonParsed[fieldName] === 'string') {
+                  text = jsonParsed[fieldName]
+                } else if (fieldName === 'insight' && jsonParsed.insight && typeof jsonParsed.insight === 'string') {
+                  text = jsonParsed.insight
+                } else if (fieldName === 'guidance' && jsonParsed.guidance && typeof jsonParsed.guidance === 'string') {
+                  text = jsonParsed.guidance
+                } else if (fieldName === 'practice' && jsonParsed.practice && typeof jsonParsed.practice === 'string') {
+                  text = jsonParsed.practice
+                } else {
+                  // Get first string value
+                  const values = Object.values(jsonParsed).filter(v => typeof v === 'string' && v.length > 10)
+                  if (values.length > 0) {
+                    text = String(values[0])
+                  }
+                }
+              }
+            } catch {
+              // If JSON parse fails, try to extract content using regex with multiline support
+              // Match { "fieldName": "content" } pattern, handling multiline content
+              const multilineJsonMatch = text.match(/\{\s*["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']\s*\}/)
+              if (multilineJsonMatch && multilineJsonMatch[1]) {
+                text = multilineJsonMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
+              }
+            }
+          }
           
           // First, try to parse if it's a JSON string (nested JSON)
           if (text.startsWith('{') || text.startsWith('[')) {
@@ -269,23 +311,25 @@ export async function POST(request: NextRequest) {
           // CRITICAL: If text contains JSON field patterns, extract content immediately
           // This handles cases like: "{ "insight": "当前状态:" }" or "insight": "当前状态:"
           // We need to match the pattern that includes the colon and extract everything after the first quote
+          // IMPORTANT: Use multiline matching to handle JSON that spans multiple lines
           if (text.includes('"insight"') || text.includes('"guidance"') || text.includes('"practice"') || 
               text.includes('"resonance"') || text.includes('"weaving"') || text.includes('"ritual"')) {
             
-            // Pattern 1: Match { "insight": "content..." } - extract everything inside the quotes
-            // This regex matches: { "insight": " and captures everything until the closing quote
-            const fullJsonMatch = text.match(/\{\s*["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.|"")*?)["']/)
+            // Pattern 1: Match { "insight": "content..." } with multiline support
+            // This regex uses [\s\S] to match any character including newlines
+            // It captures everything from the opening quote to the closing quote (even across lines)
+            const fullJsonMatch = text.match(/\{\s*["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']\s*\}/)
             if (fullJsonMatch && fullJsonMatch[1]) {
               text = fullJsonMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ').replace(/""/g, '"')
             } else {
-              // Pattern 2: Match "insight": "content..." - simpler pattern without braces
-              const simpleMatch = text.match(/["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.|"")*?)["']/)
+              // Pattern 2: Match "insight": "content..." with multiline support (without braces)
+              const simpleMatch = text.match(/["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']/)
               if (simpleMatch && simpleMatch[1]) {
                 text = simpleMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ').replace(/""/g, '"')
               } else {
                 // Pattern 3: More aggressive - find the first quote after the field name and extract until matching quote
-                // This handles cases where quotes might be escaped or nested
-                const aggressiveMatch = text.match(/[:：]\s*["']([^"']*(?:["'][^"']*)*)["']/)
+                // This handles cases where quotes might be escaped or nested, with multiline support
+                const aggressiveMatch = text.match(/[:：]\s*["']([\s\S]*?)["']/)
                 if (aggressiveMatch && aggressiveMatch[1]) {
                   text = aggressiveMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
                 }
@@ -452,14 +496,16 @@ export async function POST(request: NextRequest) {
         cleanPractice = finalClean(cleanPractice)
         
         // Final check: if still contains JSON patterns like "{ "insight": "..." }", extract content
+        // Use multiline matching to handle JSON that spans multiple lines
         if (cleanInsight.includes('"insight"') || cleanInsight.includes('"guidance"') || cleanInsight.includes('"practice"')) {
           console.warn('Warning: insight still contains JSON patterns, applying additional cleanup')
           // Try to extract content from patterns like "{ "insight": "content" }" or "insight": "content"
-          const match1 = cleanInsight.match(/\{\s*["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+          // Use [\s\S] to match any character including newlines
+          const match1 = cleanInsight.match(/\{\s*["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']\s*\}/)
           if (match1 && match1[1]) {
             cleanInsight = match1[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
           } else {
-            const match2 = cleanInsight.match(/["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+            const match2 = cleanInsight.match(/["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']/)
             if (match2 && match2[1]) {
               cleanInsight = match2[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
             }
@@ -467,11 +513,11 @@ export async function POST(request: NextRequest) {
         }
         if (cleanGuidance.includes('"insight"') || cleanGuidance.includes('"guidance"') || cleanGuidance.includes('"practice"')) {
           console.warn('Warning: guidance still contains JSON patterns, applying additional cleanup')
-          const match1 = cleanGuidance.match(/\{\s*["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+          const match1 = cleanGuidance.match(/\{\s*["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']\s*\}/)
           if (match1 && match1[1]) {
             cleanGuidance = match1[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
           } else {
-            const match2 = cleanGuidance.match(/["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+            const match2 = cleanGuidance.match(/["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']/)
             if (match2 && match2[1]) {
               cleanGuidance = match2[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
             }
@@ -479,11 +525,11 @@ export async function POST(request: NextRequest) {
         }
         if (cleanPractice.includes('"insight"') || cleanPractice.includes('"guidance"') || cleanPractice.includes('"practice"')) {
           console.warn('Warning: practice still contains JSON patterns, applying additional cleanup')
-          const match1 = cleanPractice.match(/\{\s*["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+          const match1 = cleanPractice.match(/\{\s*["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']\s*\}/)
           if (match1 && match1[1]) {
             cleanPractice = match1[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
           } else {
-            const match2 = cleanPractice.match(/["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+            const match2 = cleanPractice.match(/["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']/)
             if (match2 && match2[1]) {
               cleanPractice = match2[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
             }
