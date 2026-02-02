@@ -181,7 +181,10 @@ export async function POST(request: NextRequest) {
       let content = data.choices[0]?.message?.content || 'Unable to generate interpretation.'
       
       console.log('Raw AI response length:', content.length)
-      console.log('Raw AI response preview:', content.substring(0, 300))
+      console.log('Raw AI response preview:', content.substring(0, 500))
+      console.log('Raw AI response contains insight:', content.includes('"insight"'))
+      console.log('Raw AI response contains guidance:', content.includes('"guidance"'))
+      console.log('Raw AI response contains practice:', content.includes('"practice"'))
       
       // Clean up the content - remove markdown code blocks if present
       content = content.trim()
@@ -495,45 +498,59 @@ export async function POST(request: NextRequest) {
         cleanGuidance = finalClean(cleanGuidance)
         cleanPractice = finalClean(cleanPractice)
         
-        // Final check: if still contains JSON patterns like "{ "insight": "..." }", extract content
-        // Use multiline matching to handle JSON that spans multiple lines
-        if (cleanInsight.includes('"insight"') || cleanInsight.includes('"guidance"') || cleanInsight.includes('"practice"')) {
-          console.warn('Warning: insight still contains JSON patterns, applying additional cleanup')
-          // Try to extract content from patterns like "{ "insight": "content" }" or "insight": "content"
-          // Use [\s\S] to match any character including newlines
-          const match1 = cleanInsight.match(/\{\s*["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']\s*\}/)
-          if (match1 && match1[1]) {
-            cleanInsight = match1[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
-          } else {
-            const match2 = cleanInsight.match(/["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']/)
-            if (match2 && match2[1]) {
-              cleanInsight = match2[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+        // AGGRESSIVE FINAL CLEANUP: Remove ALL JSON patterns, no matter what
+        const aggressiveClean = (text: string): string => {
+          if (!text) return text
+          
+          // If text still contains any JSON field patterns, extract content aggressively
+          if (text.includes('"insight"') || text.includes('"guidance"') || text.includes('"practice"') || 
+              text.includes('"resonance"') || text.includes('"weaving"') || text.includes('"ritual"')) {
+            
+            // Try multiple patterns to extract content
+            // Pattern 1: { "insight": "content" } with multiline
+            let match = text.match(/\{\s*["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']\s*\}/)
+            if (match && match[1]) {
+              text = match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
+            } else {
+              // Pattern 2: "insight": "content" without braces
+              match = text.match(/["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']/)
+              if (match && match[1]) {
+                text = match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
+              } else {
+                // Pattern 3: Find content after the first colon and quote
+                match = text.match(/[:：]\s*["']([\s\S]*?)["']/)
+                if (match && match[1]) {
+                  text = match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
+                } else {
+                  // Pattern 4: Remove all JSON structure completely
+                  text = text.replace(/\{[^}]*\}/g, '')
+                  text = text.replace(/["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*/gi, '')
+                }
+              }
             }
           }
+          
+          // Final cleanup: remove any remaining JSON artifacts
+          text = text.replace(/\{[^}]*\}/g, '')
+          text = text.replace(/\[[^\]]*\]/g, '')
+          text = text.replace(/["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*/gi, '')
+          text = text.replace(/^["']+|["']+$/g, '')
+          
+          return text.trim()
+        }
+        
+        // Apply aggressive cleanup to all fields
+        if (cleanInsight.includes('"insight"') || cleanInsight.includes('"guidance"') || cleanInsight.includes('"practice"')) {
+          console.warn('Warning: insight still contains JSON patterns, applying aggressive cleanup')
+          cleanInsight = aggressiveClean(cleanInsight)
         }
         if (cleanGuidance.includes('"insight"') || cleanGuidance.includes('"guidance"') || cleanGuidance.includes('"practice"')) {
-          console.warn('Warning: guidance still contains JSON patterns, applying additional cleanup')
-          const match1 = cleanGuidance.match(/\{\s*["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']\s*\}/)
-          if (match1 && match1[1]) {
-            cleanGuidance = match1[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
-          } else {
-            const match2 = cleanGuidance.match(/["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']/)
-            if (match2 && match2[1]) {
-              cleanGuidance = match2[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
-            }
-          }
+          console.warn('Warning: guidance still contains JSON patterns, applying aggressive cleanup')
+          cleanGuidance = aggressiveClean(cleanGuidance)
         }
         if (cleanPractice.includes('"insight"') || cleanPractice.includes('"guidance"') || cleanPractice.includes('"practice"')) {
-          console.warn('Warning: practice still contains JSON patterns, applying additional cleanup')
-          const match1 = cleanPractice.match(/\{\s*["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']\s*\}/)
-          if (match1 && match1[1]) {
-            cleanPractice = match1[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
-          } else {
-            const match2 = cleanPractice.match(/["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']([\s\S]*?)["']/)
-            if (match2 && match2[1]) {
-              cleanPractice = match2[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
-            }
-          }
+          console.warn('Warning: practice still contains JSON patterns, applying aggressive cleanup')
+          cleanPractice = aggressiveClean(cleanPractice)
         }
         
         console.log('Cleaned fields:', {

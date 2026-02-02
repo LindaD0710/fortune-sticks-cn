@@ -740,72 +740,31 @@ function RevelationIcon() {
   )
 }
 
-// Component to render text with golden highlights and paragraph breaks
+// Component to render text with golden highlights (simplified - no paragraph breaks for now)
 function HighlightedText({ text }: { text: string }) {
-  // Split by double newlines first to get major sections
-  const sections = text.split(/\n\n+/).filter(s => s.trim())
+  // Process bold text within the text
+  const parts = text.split(/(\*\*.*?\*\*)/g)
   
   return (
-    <div className="space-y-4">
-      {sections.map((section, sectionIndex) => {
-        // Check if this section starts with a bold title (like "**当前状态**：")
-        const titleMatch = section.match(/^(\*\*.*?\*\*[：:])?\s*([\s\S]*)$/)
-        const hasTitle = titleMatch && titleMatch[1]
-        const title = hasTitle ? titleMatch[1].replace(/\*\*/g, '').replace(/[：:]\s*$/, '') : null
-        const content = hasTitle ? titleMatch[2] : section
-        
-        // Split content by single newlines to get paragraphs
-        const paragraphs = content.split(/\n/).filter(p => p.trim())
-        
-        return (
-          <div key={sectionIndex} className="space-y-3">
-            {/* Render title if exists */}
-            {title && (
-              <h4 
-                className="text-amber-300 font-semibold text-base sm:text-lg mb-2"
-                style={{
-                  textShadow: '0 0 8px rgba(255, 215, 0, 0.3)',
-                }}
-              >
-                {title}
-              </h4>
-            )}
-            
-            {/* Render paragraphs */}
-            {paragraphs.map((paragraph, paraIndex) => {
-              // Process bold text within paragraph
-              const parts = paragraph.split(/(\*\*.*?\*\*)/g)
-              
-              return (
-                <p 
-                  key={paraIndex}
-                  className="text-white/90 text-sm sm:text-base md:text-lg leading-relaxed"
-                  style={{ lineHeight: '1.8' }}
-                >
-                  {parts.map((part, partIndex) => {
-                    if (part.startsWith('**') && part.endsWith('**')) {
-                      const goldenText = part.slice(2, -2)
-                      return (
-                        <span 
-                          key={partIndex}
-                          className="font-bold text-[#FFD700]"
-                          style={{
-                            textShadow: '0 0 8px rgba(255, 215, 0, 0.4)',
-                          }}
-                        >
-                          {goldenText}
-                        </span>
-                      )
-                    }
-                    return <span key={partIndex}>{part}</span>
-                  })}
-                </p>
-              )
-            })}
-          </div>
-        )
+    <p className="text-white/90 text-sm sm:text-base md:text-lg leading-relaxed whitespace-pre-wrap" style={{ lineHeight: '1.8' }}>
+      {parts.map((part, partIndex) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          const goldenText = part.slice(2, -2)
+          return (
+            <span 
+              key={partIndex}
+              className="font-bold text-[#FFD700]"
+              style={{
+                textShadow: '0 0 8px rgba(255, 215, 0, 0.4)',
+              }}
+            >
+              {goldenText}
+            </span>
+          )
+        }
+        return <span key={partIndex}>{part}</span>
       })}
-    </div>
+    </p>
   )
 }
 
