@@ -378,15 +378,22 @@ export async function POST(request: NextRequest) {
           // If it still looks like JSON, try one more aggressive cleanup
           if (text.trim().startsWith('{') || text.includes('"insight"') || text.includes('"guidance"') || text.includes('"practice"') || 
               text.includes('"resonance"') || text.includes('"weaving"') || text.includes('"ritual"')) {
-            // Try to extract text between quotes after field names (handle escaped quotes)
-            const quoteMatch = text.match(/:\s*"((?:[^"\\]|\\.)*)"/)
-            if (quoteMatch && quoteMatch[1]) {
-              text = quoteMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
+            // Try multiple patterns to extract the actual content
+            // Pattern 1: "insight": "content" or "insight": 'content'
+            const pattern1 = text.match(/["']?\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+            if (pattern1 && pattern1[1]) {
+              text = pattern1[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ').replace(/\\'/g, "'")
             } else {
-              // Remove all JSON structure more aggressively
-              text = text.replace(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g, '')
-              text = text.replace(/["']/g, '')
-              text = text.replace(/^\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*:\s*/i, '')
+              // Pattern 2: Try to extract text between quotes after field names (handle escaped quotes)
+              const quoteMatch = text.match(/:\s*"((?:[^"\\]|\\.)*)"/)
+              if (quoteMatch && quoteMatch[1]) {
+                text = quoteMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
+              } else {
+                // Pattern 3: Remove all JSON structure more aggressively
+                text = text.replace(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g, '')
+                text = text.replace(/["']/g, '')
+                text = text.replace(/^\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*:\s*/i, '')
+              }
             }
           }
           
@@ -394,12 +401,21 @@ export async function POST(request: NextRequest) {
           text = text.replace(/\{[^}]*\}/g, '')
           text = text.replace(/\[[^\]]*\]/g, '')
           
-          // Final pass: remove any remaining field name references
+          // Remove JSON field patterns like "insight": "..." or "insight": "..."
+          // This handles cases where the text starts with a field name
+          text = text.replace(/^["']?\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']?/i, '')
+          text = text.replace(/\s*["']?\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']?/gi, ' ')
+          
+          // Remove any remaining JSON field patterns with quotes like "insight": or "guidance":
+          text = text.replace(/"\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*"\s*[:：]\s*/gi, '')
+          text = text.replace(/'\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*'\s*[:：]\s*/gi, '')
+          
+          // Remove leading/trailing quotes that might be left
+          text = text.replace(/^["']+|["']+$/g, '')
+          
+          // Final pass: remove any remaining field name references at the start
           text = text.replace(/^\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*[:：]\s*/i, '')
           text = text.replace(/\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*[:：]\s*/gi, ' ')
-          
-          // Remove any remaining JSON field patterns like "insight": or "guidance":
-          text = text.replace(/"\s*(?:insight|guidance|practice|resonance|weaving|ritual)\s*"\s*[:：]\s*/gi, '')
           
           return text.trim()
         }
