@@ -749,7 +749,7 @@ function HighlightedText({ text }: { text: string }) {
     <div className="space-y-4">
       {sections.map((section, sectionIndex) => {
         // Check if this section starts with a bold title (like "**当前状态**：")
-        const titleMatch = section.match(/^(\*\*.*?\*\*[：:])?\s*(.*)$/s)
+        const titleMatch = section.match(/^(\*\*.*?\*\*[：:])?\s*([\s\S]*)$/)
         const hasTitle = titleMatch && titleMatch[1]
         const title = hasTitle ? titleMatch[1].replace(/\*\*/g, '').replace(/[：:]\s*$/, '') : null
         const content = hasTitle ? titleMatch[2] : section
