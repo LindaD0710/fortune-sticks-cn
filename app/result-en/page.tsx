@@ -740,30 +740,72 @@ function RevelationIcon() {
   )
 }
 
-// Component to render text with golden highlights
+// Component to render text with golden highlights and paragraph breaks
 function HighlightedText({ text }: { text: string }) {
-  const parts = text.split(/(\*\*.*?\*\*)/g)
+  // Split by double newlines first to get major sections
+  const sections = text.split(/\n\n+/).filter(s => s.trim())
   
   return (
-    <>
-      {parts.map((part, index) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-          const goldenText = part.slice(2, -2)
-          return (
-            <span 
-              key={index}
-              className="font-bold text-[#FFD700]"
-              style={{
-                textShadow: '0 0 8px rgba(255, 215, 0, 0.4)',
-              }}
-            >
-              {goldenText}
-            </span>
-          )
-        }
-        return <span key={index}>{part}</span>
+    <div className="space-y-4">
+      {sections.map((section, sectionIndex) => {
+        // Check if this section starts with a bold title (like "**当前状态**：")
+        const titleMatch = section.match(/^(\*\*.*?\*\*[：:])?\s*(.*)$/s)
+        const hasTitle = titleMatch && titleMatch[1]
+        const title = hasTitle ? titleMatch[1].replace(/\*\*/g, '').replace(/[：:]\s*$/, '') : null
+        const content = hasTitle ? titleMatch[2] : section
+        
+        // Split content by single newlines to get paragraphs
+        const paragraphs = content.split(/\n/).filter(p => p.trim())
+        
+        return (
+          <div key={sectionIndex} className="space-y-3">
+            {/* Render title if exists */}
+            {title && (
+              <h4 
+                className="text-amber-300 font-semibold text-base sm:text-lg mb-2"
+                style={{
+                  textShadow: '0 0 8px rgba(255, 215, 0, 0.3)',
+                }}
+              >
+                {title}
+              </h4>
+            )}
+            
+            {/* Render paragraphs */}
+            {paragraphs.map((paragraph, paraIndex) => {
+              // Process bold text within paragraph
+              const parts = paragraph.split(/(\*\*.*?\*\*)/g)
+              
+              return (
+                <p 
+                  key={paraIndex}
+                  className="text-white/90 text-sm sm:text-base md:text-lg leading-relaxed"
+                  style={{ lineHeight: '1.8' }}
+                >
+                  {parts.map((part, partIndex) => {
+                    if (part.startsWith('**') && part.endsWith('**')) {
+                      const goldenText = part.slice(2, -2)
+                      return (
+                        <span 
+                          key={partIndex}
+                          className="font-bold text-[#FFD700]"
+                          style={{
+                            textShadow: '0 0 8px rgba(255, 215, 0, 0.4)',
+                          }}
+                        >
+                          {goldenText}
+                        </span>
+                      )
+                    }
+                    return <span key={partIndex}>{part}</span>
+                  })}
+                </p>
+              )
+            })}
+          </div>
+        )
       })}
-    </>
+    </div>
   )
 }
 
@@ -986,57 +1028,7 @@ export default function ResultPageEN() {
                 </FadeInText>
               )}
 
-              {/* 5. Story + Story_Brief */}
-              {fortuneStick.storyBrief && (
-                <FadeInText delay={0.9}>
-                  <StoryBrief 
-                    story={fortuneStick.story || ''}
-                    storyBrief={fortuneStick.storyBrief} 
-                  />
-                  <GoldenDivider />
-                </FadeInText>
-              )}
-
-              {/* 6. Detail1 + Detail2 - Core message */}
-              {(fortuneStick.detail1 || fortuneStick.detail2) && (
-                <FadeInText delay={1.0}>
-                  <div className={`${UNIFIED_CONTAINER_WIDTH} mx-auto`}>
-                    {/* Card with unified border style: left border only, bg-white/5 backdrop-blur-md */}
-                    <div 
-                      className="relative rounded-xl p-4 sm:p-6 md:p-8 bg-white/5 backdrop-blur-md"
-                      style={{
-                        borderLeft: '2px solid #FFD700',
-                      }}
-                    >
-                      {/* Title inside the card */}
-                      <h3 className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-4 sm:mb-5 uppercase tracking-wider text-left flex items-center gap-2 sm:gap-3">
-                        <RevelationIcon />
-                        启示
-                      </h3>
-                      
-                      {fortuneStick.detail1 && (
-                        <p 
-                          className="text-white/90 text-sm sm:text-base md:text-lg mb-4 text-left"
-                          style={{ lineHeight: '1.8' }}
-                        >
-                          {fortuneStick.detail1}
-                        </p>
-                      )}
-                      {fortuneStick.detail2 && (
-                        <p 
-                          className="text-white/90 text-sm sm:text-base md:text-lg text-left"
-                          style={{ lineHeight: '1.8' }}
-                        >
-                          {fortuneStick.detail2}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <GoldenDivider />
-                </FadeInText>
-              )}
-
-              {/* 7. AI Deep Interpretation Section */}
+              {/* 4. AI Deep Interpretation Section - 个性化解读 */}
               {/* Loading or Error State */}
               {(isLoading || isWeaving) && (
                 <WeavingAnimation />
@@ -1072,9 +1064,9 @@ export default function ResultPageEN() {
                             <ResonanceIcon />
                             核心洞察
                           </h3>
-                          <p className="text-white/90 text-sm sm:text-base md:text-lg leading-relaxed" style={{ lineHeight: '1.8' }}>
+                          <div>
                             <HighlightedText text={interpretation.insight} />
-                          </p>
+                          </div>
                         </div>
                       </div>
                     </ScrollFadeIn>
@@ -1085,22 +1077,40 @@ export default function ResultPageEN() {
                     <GoldenDivider />
                   )}
 
-                  {/* Guidance and Practice - Combined */}
-                  {(interpretation.guidance || interpretation.practice) && (
-                    <ScrollFadeIn delay={0}>
+                  {/* Action Guidance */}
+                  {interpretation.guidance && (
+                    <ScrollFadeIn delay={0.1}>
                       <div className={`${UNIFIED_CONTAINER_WIDTH} mx-auto`}>
                         <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 sm:p-8 border-l-2 border-[#FFD700]">
-                          {interpretation.guidance && (
-                            <div>
-                              <h3 className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-4 sm:mb-5 uppercase tracking-wider text-left flex items-center gap-2 sm:gap-3">
-                                <WeavingIcon />
-                                行动指引
-                              </h3>
-                              <p className="text-white/90 text-sm sm:text-base md:text-lg leading-relaxed" style={{ lineHeight: '1.8' }}>
-                                <HighlightedText text={interpretation.guidance} />
-                              </p>
-                            </div>
-                          )}
+                          <h3 className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-4 sm:mb-5 uppercase tracking-wider text-left flex items-center gap-2 sm:gap-3">
+                            <WeavingIcon />
+                            行动指引
+                          </h3>
+                          <div>
+                            <HighlightedText text={interpretation.guidance} />
+                          </div>
+                        </div>
+                      </div>
+                    </ScrollFadeIn>
+                  )}
+
+                  {/* Golden divider between Guidance and Practice */}
+                  {interpretation.guidance && interpretation.practice && (
+                    <GoldenDivider />
+                  )}
+
+                  {/* Practice - 实践建议 */}
+                  {interpretation.practice && (
+                    <ScrollFadeIn delay={0.2}>
+                      <div className={`${UNIFIED_CONTAINER_WIDTH} mx-auto`}>
+                        <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 sm:p-8 border-l-2 border-[#FFD700]">
+                          <h3 className="text-amber-300 text-xs sm:text-sm md:text-base font-semibold mb-4 sm:mb-5 uppercase tracking-wider text-left flex items-center gap-2 sm:gap-3">
+                            <RitualIcon />
+                            实践建议
+                          </h3>
+                          <div>
+                            <HighlightedText text={interpretation.practice} />
+                          </div>
                         </div>
                       </div>
                     </ScrollFadeIn>
