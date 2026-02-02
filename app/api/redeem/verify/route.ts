@@ -37,6 +37,15 @@ export async function POST(request: NextRequest) {
       ? `${formattedCode.slice(0, 4)}-${formattedCode.slice(4, 8)}-${formattedCode.slice(8, 12)}`
       : formattedCode
 
+    // 检查 Supabase 配置
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Supabase environment variables are not configured')
+      return NextResponse.json(
+        { error: '服务器配置错误，请联系管理员', valid: false },
+        { status: 500 }
+      )
+    }
+
     // 连接 Supabase
     const supabase = await createClient()
 
@@ -47,7 +56,22 @@ export async function POST(request: NextRequest) {
       .eq('code', normalizedCode)
       .single()
 
-    if (error || !data) {
+    if (error) {
+      console.error('Supabase query error:', error)
+      // 如果是配置错误，返回更明确的错误信息
+      if (error.message && error.message.includes('not configured')) {
+        return NextResponse.json(
+          { error: '服务器配置错误，请联系管理员', valid: false },
+          { status: 500 }
+        )
+      }
+      return NextResponse.json(
+        { error: '兑换码不存在', valid: false },
+        { status: 404 }
+      )
+    }
+
+    if (!data) {
       return NextResponse.json(
         { error: '兑换码不存在', valid: false },
         { status: 404 }

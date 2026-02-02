@@ -19,9 +19,9 @@ const playfairDisplay = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: '东方神签 - 传统中国占卜（仅供娱乐）',
-  description: '体验古老的中国占卜艺术，用于娱乐和文化反思。仅供娱乐，非专业建议。',
-  keywords: ['中国占卜', '神签', '娱乐', '文化体验', '反思'],
+  title: '东方文化体验',
+  description: '对话千年智慧，在喧嚣中寻回你的内心秩序。基于传统文化的心理疏导与自我反思工具，仅供娱乐，请相信科学。',
+  keywords: ['关帝灵签', '传统文化', '心理疏导', '自我反思', '智慧对话', '文化体验'],
 }
 
 export default function RootLayout({

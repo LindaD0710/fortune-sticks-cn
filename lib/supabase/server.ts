@@ -7,12 +7,24 @@ export async function createClient() {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     // Return a mock client if Supabase is not configured
+    // This will cause errors if used for database operations
+    console.error('Supabase not configured: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is missing')
     return {
       auth: {
         getUser: async () => ({ data: { user: null }, error: null }),
         exchangeCodeForSession: async () => ({ error: null }),
         signOut: async () => ({ error: null }),
       },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null, error: { message: 'Supabase not configured' } }),
+            update: () => ({
+              eq: async () => ({ error: { message: 'Supabase not configured' } }),
+            }),
+          }),
+        }),
+      }),
     } as any
   }
 
