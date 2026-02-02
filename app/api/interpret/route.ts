@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
                 },
               ],
               temperature: 0.7,
-              max_tokens: 2000,
+              max_tokens: 4000, // Increased to handle longer responses (insight: 400-500 words, guidance: 300-400 words, practice: 100-150 words)
             }),
           })
           
@@ -210,8 +210,9 @@ export async function POST(request: NextRequest) {
       }
       
       // Try to parse JSON response
+      let parsed: any
       try {
-        let parsed = JSON.parse(content.trim())
+        parsed = JSON.parse(content.trim())
         console.log('Successfully parsed JSON, fields:', {
           hasResonance: !!parsed.resonance,
           hasWeaving: !!parsed.weaving,
@@ -222,6 +223,80 @@ export async function POST(request: NextRequest) {
           insightType: typeof parsed.insight,
           insightPreview: typeof parsed.insight === 'string' ? parsed.insight.substring(0, 50) : 'not a string'
         })
+      } catch (parseError: any) {
+        // JSON parsing failed - likely incomplete JSON (truncated response)
+        console.warn('Failed to parse JSON response, content:', content.substring(0, 500))
+        console.warn('Parse error:', parseError.message)
+        
+        // Try to fix incomplete JSON by finding the last complete field
+        // Strategy: Extract what we can from the incomplete JSON
+        const fixIncompleteJson = (incompleteJson: string): any => {
+          const result: any = {}
+          
+          // Try to extract insight field (even if incomplete)
+          const insightMatch = incompleteJson.match(/"insight"\s*:\s*"([\s\S]*?)(?:"\s*[,}]|$)/)
+          if (insightMatch) {
+            // Remove trailing incomplete parts (like "头颅已" without closing quote)
+            let insightText = insightMatch[1]
+            // If text doesn't end with quote, it's incomplete - try to find a natural break point
+            if (!insightMatch[0].endsWith('"')) {
+              // Find last complete sentence or paragraph
+              const lastComplete = insightText.match(/([\s\S]*[。！？\n\n])/)
+              if (lastComplete) {
+                insightText = lastComplete[1]
+              }
+            }
+            result.insight = insightText.replace(/\\"/g, '"').replace(/\\n/g, '\n')
+          }
+          
+          // Try to extract guidance field
+          const guidanceMatch = incompleteJson.match(/"guidance"\s*:\s*"([\s\S]*?)(?:"\s*[,}]|$)/)
+          if (guidanceMatch) {
+            let guidanceText = guidanceMatch[1]
+            if (!guidanceMatch[0].endsWith('"')) {
+              const lastComplete = guidanceText.match(/([\s\S]*[。！？\n\n])/)
+              if (lastComplete) {
+                guidanceText = lastComplete[1]
+              }
+            }
+            result.guidance = guidanceText.replace(/\\"/g, '"').replace(/\\n/g, '\n')
+          }
+          
+          // Try to extract practice field
+          const practiceMatch = incompleteJson.match(/"practice"\s*:\s*"([\s\S]*?)(?:"\s*[,}]|$)/)
+          if (practiceMatch) {
+            let practiceText = practiceMatch[1]
+            if (!practiceMatch[0].endsWith('"')) {
+              const lastComplete = practiceText.match(/([\s\S]*[。！？\n\n])/)
+              if (lastComplete) {
+                practiceText = lastComplete[1]
+              }
+            }
+            result.practice = practiceText.replace(/\\"/g, '"').replace(/\\n/g, '\n')
+          }
+          
+          return result
+        }
+        
+        // Try to extract what we can from incomplete JSON
+        const extracted = fixIncompleteJson(content)
+        if (extracted.insight || extracted.guidance || extracted.practice) {
+          console.log('Extracted partial JSON fields:', {
+            hasInsight: !!extracted.insight,
+            hasGuidance: !!extracted.guidance,
+            hasPractice: !!extracted.practice,
+            insightLength: extracted.insight?.length || 0
+          })
+          // Use extracted fields as parsed result
+          parsed = extracted
+        } else {
+          // If extraction failed, throw the original error
+          throw parseError
+        }
+      }
+      
+      // Continue with parsed result (either from successful parse or extraction)
+      {
         
         // Clean up the parsed values - ensure they are pure text, not JSON structures
         const cleanText = (value: any, fieldName: string): string => {
