@@ -266,36 +266,29 @@ export async function POST(request: NextRequest) {
             }
           }
           
-          // CRITICAL: If text still contains JSON field patterns like "{ "insight": "..." }", extract the content
-          // This handles cases where the field value itself is a JSON string
+          // CRITICAL: If text contains JSON field patterns, extract content immediately
+          // This handles cases like: "{ "insight": "当前状态:" }" or "insight": "当前状态:"
+          // We need to match the pattern that includes the colon and extract everything after the first quote
           if (text.includes('"insight"') || text.includes('"guidance"') || text.includes('"practice"') || 
               text.includes('"resonance"') || text.includes('"weaving"') || text.includes('"ritual"')) {
-            // Try to extract content from JSON patterns like "{ "insight": "content" }"
-            const jsonPattern = text.match(/\{\s*["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
-            if (jsonPattern && jsonPattern[1]) {
-              text = jsonPattern[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
-            } else {
-              // Try simpler pattern: "insight": "content"
-              const simplePattern = text.match(/["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
-              if (simplePattern && simplePattern[1]) {
-                text = simplePattern[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
-              }
-            }
-          }
-          
-          // CRITICAL FIX: If text contains JSON field patterns like "{ "insight": "..." }" or "insight": "...", extract content first
-          // This must happen BEFORE other cleanup to catch nested JSON strings
-          if (text.includes('"insight"') || text.includes('"guidance"') || text.includes('"practice"') || 
-              text.includes('"resonance"') || text.includes('"weaving"') || text.includes('"ritual"')) {
-            // Pattern 1: Try to extract from full JSON object like { "insight": "content" }
-            const fullJsonMatch = text.match(/\{\s*["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+            
+            // Pattern 1: Match { "insight": "content..." } - extract everything inside the quotes
+            // This regex matches: { "insight": " and captures everything until the closing quote
+            const fullJsonMatch = text.match(/\{\s*["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.|"")*?)["']/)
             if (fullJsonMatch && fullJsonMatch[1]) {
-              text = fullJsonMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
+              text = fullJsonMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ').replace(/""/g, '"')
             } else {
-              // Pattern 2: Try simpler pattern like "insight": "content"
-              const simpleMatch = text.match(/["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+              // Pattern 2: Match "insight": "content..." - simpler pattern without braces
+              const simpleMatch = text.match(/["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.|"")*?)["']/)
               if (simpleMatch && simpleMatch[1]) {
-                text = simpleMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
+                text = simpleMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ').replace(/""/g, '"')
+              } else {
+                // Pattern 3: More aggressive - find the first quote after the field name and extract until matching quote
+                // This handles cases where quotes might be escaped or nested
+                const aggressiveMatch = text.match(/[:：]\s*["']([^"']*(?:["'][^"']*)*)["']/)
+                if (aggressiveMatch && aggressiveMatch[1]) {
+                  text = aggressiveMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
+                }
               }
             }
           }
