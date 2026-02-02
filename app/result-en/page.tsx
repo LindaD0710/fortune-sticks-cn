@@ -163,7 +163,8 @@ function Seal({ level }: { level: string }) {
               <feFuncA type="discrete" tableValues="0 0.05 0.08 0.1" />
             </feComponentTransfer>
             <feGaussianBlur in="grain" stdDeviation="0.5" result="softGrain"/>
-            <feComposite in="SourceGraphic" in2="softGrain" operator="multiply"/>
+            {/* Use feBlend with mode=\"multiply\" for better browser compatibility */}
+            <feBlend in="SourceGraphic" in2="softGrain" mode="multiply" />
           </filter>
         </defs>
         

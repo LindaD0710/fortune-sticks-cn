@@ -2,22 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateOraclePrompt } from '@/lib/ai-prompt'
 
 export async function POST(request: NextRequest) {
-  const body = await request.json()
-  const { question, fortuneStick } = body
+    const body = await request.json()
+    const { question, fortuneStick } = body
 
-  if (!question || !fortuneStick) {
-    return NextResponse.json(
-      { error: 'Missing required parameters' },
-      { status: 400 }
-    )
-  }
+    if (!question || !fortuneStick) {
+      return NextResponse.json(
+        { error: 'Missing required parameters' },
+        { status: 400 }
+      )
+    }
 
-  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || ''
-  
-  // Model configuration - supports fallback if primary model is unavailable
-  // Try models in order: Claude 3.5 Sonnet -> GPT-4 -> DeepSeek -> GPT-3.5 Turbo
-  // DeepSeek is added as it's widely available and cost-effective
-  const MODELS = [
+    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || ''
+    
+    // Model configuration - supports fallback if primary model is unavailable
+    // Try models in order: Claude 3.5 Sonnet -> GPT-4 -> DeepSeek -> GPT-3.5 Turbo
+    // DeepSeek is added as it's widely available and cost-effective
+    const MODELS = [
       'anthropic/claude-3.5-sonnet',
       'openai/gpt-4',
       'openai/gpt-4-turbo',
@@ -25,19 +25,19 @@ export async function POST(request: NextRequest) {
       'deepseek/deepseek-coder', // DeepSeek Coder - alternative
       'openai/gpt-3.5-turbo',
     ]
-  const selectedModel = process.env.OPENROUTER_MODEL || MODELS[0]
-  
-  if (!OPENROUTER_API_KEY) {
+    const selectedModel = process.env.OPENROUTER_MODEL || MODELS[0]
+    
+    if (!OPENROUTER_API_KEY) {
     // Return a mock interpretation for development (in Chinese)
-    return NextResponse.json({
+      return NextResponse.json({
       insight: `签文已感受到你的问题...在"${fortuneStick.level}"的指引下，命运的线索开始闪烁。第${fortuneStick.number}签的能量与你的问题产生了深刻共鸣。**这份签文提醒你，当前的问题背后可能隐藏着成长的机会。**`,
       guidance: `针对你的问题，签文的指引建议你走一条反思和内在智慧的道路。**信任你以优雅的方式应对这个情况的能力。**古老的智慧提醒我们，每一个挑战都蕴含着成长和理解的种子。`,
       practice: `本周每天早晨花10分钟写下三件你感激的事情，然后反思这个练习如何改变你的视角。`
-    })
-  }
+      })
+    }
 
-  // Generate prompt using the prompt generator
-  try {
+    // Generate prompt using the prompt generator
+    try {
       const userPrompt = generateOraclePrompt(fortuneStick, question)
       
       const systemPrompt = `你是"关帝灵签"的智慧解读师。你精通东方哲学、心理学反思和个人成长指导。你的语调优雅、深思熟虑、富有治愈力，有文学性和画面感。你使用古代故事的隐喻和智慧来启发现代自我反思，但始终以心理学、正念和个人赋能为框架——绝不涉及超自然或宗教实践。
@@ -295,7 +295,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Continue with parsed result (either from successful parse or extraction)
-      // Clean up the parsed values - ensure they are pure text, not JSON structures
+        // Clean up the parsed values - ensure they are pure text, not JSON structures
       {
         const cleanText = (value: any, fieldName: string): string => {
           if (!value) return ''
@@ -512,7 +512,7 @@ export async function POST(request: NextRequest) {
                 } else {
                   // Get the first string value
                   const values = Object.values(parsed).filter(v => typeof v === 'string' && v.length > 10)
-                  if (values.length > 0) {
+                if (values.length > 0) {
                     text = String(values[0])
                   }
                 }
@@ -649,47 +649,12 @@ export async function POST(request: NextRequest) {
         }
       } // Close the scope block started at line 298
       } catch (e) {
-        // If not JSON, try to extract meaningful content
-        console.warn('Failed to parse JSON response, content:', content.substring(0, 200))
-        
-        // Try to split content into three parts if it's a long text
-        if (content.length > 100) {
-          const parts = content.split(/\n\n+/)
-          return NextResponse.json({
-            insight: parts[0] || content.substring(0, Math.floor(content.length / 3)),
-            guidance: parts[1] || content.substring(Math.floor(content.length / 3), Math.floor(content.length * 2 / 3)),
-            practice: parts[2] || content.substring(Math.floor(content.length * 2 / 3)) || '本周每天花10分钟静心反思，写下你的感受和想法。'
-          })
-        }
-        
-        // Fallback: return content as insight
+        // Final fallback: if anything above throws, return a safe generic response
+        console.error('Failed to clean AI response, using generic fallback:', e)
         return NextResponse.json({
-          insight: content,
-          guidance: '签文的智慧提醒我们，每一个挑战都蕴含着成长的机会。信任你内在的智慧，以优雅的方式应对当前的情况。',
-          practice: '本周每天花10分钟静心反思，写下你的感受和想法，这将帮助你更好地理解当前的情况。'
+          insight: '签文在传递信息时出现了一些技术问题，暂时无法给出完整的个性化解读。但从整体能量来看，这是一份提醒你放慢脚步、照顾好自己内心感受的讯息。',
+          guidance: '先把注意力从结果转回到自己身上。规律作息、保持日常生活的节奏感，多和值得信赖的朋友交流，把当下能做好的事情一步步做好。',
+          practice: '今天找一个安静的时间，写下你最近最担心的三件事，然后在每一条下面补上一句：如果事情没有如我所愿，我仍然可以怎样善待自己。'
         })
       }
-    } catch (promptError) {
-      console.error('Error generating prompt or calling API:', promptError)
-      return NextResponse.json(
-        { 
-          error: 'Failed to generate prompt or call API',
-          details: promptError instanceof Error ? promptError.message : 'Unknown error occurred'
-        },
-        { status: 500 }
-      )
     }
-  } catch (error) {
-    console.error('Interpretation error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'An error occurred'
-    return NextResponse.json(
-      { 
-        error: errorMessage,
-        details: error instanceof Error && error.message.includes('fetch') 
-          ? 'Network error. Please check your internet connection and try again.'
-          : errorMessage
-      },
-      { status: 500 }
-    )
-  }
-}
