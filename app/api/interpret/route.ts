@@ -296,9 +296,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Continue with parsed result (either from successful parse or extraction)
-      {
-        
-        // Clean up the parsed values - ensure they are pure text, not JSON structures
+      // Clean up the parsed values - ensure they are pure text, not JSON structures
         const cleanText = (value: any, fieldName: string): string => {
           if (!value) return ''
           if (typeof value !== 'string') {
