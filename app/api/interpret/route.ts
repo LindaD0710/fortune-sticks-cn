@@ -266,6 +266,40 @@ export async function POST(request: NextRequest) {
             }
           }
           
+          // CRITICAL: If text still contains JSON field patterns like "{ "insight": "..." }", extract the content
+          // This handles cases where the field value itself is a JSON string
+          if (text.includes('"insight"') || text.includes('"guidance"') || text.includes('"practice"') || 
+              text.includes('"resonance"') || text.includes('"weaving"') || text.includes('"ritual"')) {
+            // Try to extract content from JSON patterns like "{ "insight": "content" }"
+            const jsonPattern = text.match(/\{\s*["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+            if (jsonPattern && jsonPattern[1]) {
+              text = jsonPattern[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
+            } else {
+              // Try simpler pattern: "insight": "content"
+              const simplePattern = text.match(/["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+              if (simplePattern && simplePattern[1]) {
+                text = simplePattern[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
+              }
+            }
+          }
+          
+          // CRITICAL FIX: If text contains JSON field patterns like "{ "insight": "..." }" or "insight": "...", extract content first
+          // This must happen BEFORE other cleanup to catch nested JSON strings
+          if (text.includes('"insight"') || text.includes('"guidance"') || text.includes('"practice"') || 
+              text.includes('"resonance"') || text.includes('"weaving"') || text.includes('"ritual"')) {
+            // Pattern 1: Try to extract from full JSON object like { "insight": "content" }
+            const fullJsonMatch = text.match(/\{\s*["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+            if (fullJsonMatch && fullJsonMatch[1]) {
+              text = fullJsonMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
+            } else {
+              // Pattern 2: Try simpler pattern like "insight": "content"
+              const simpleMatch = text.match(/["']?(?:insight|guidance|practice|resonance|weaving|ritual)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+              if (simpleMatch && simpleMatch[1]) {
+                text = simpleMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ')
+              }
+            }
+          }
+          
           // Remove any JSON structure patterns that might be embedded
           // Remove patterns like: {"insight": "...", "guidance": "..."} or {"resonance": "...", "weaving": "..."}
           text = text.replace(/\{[^}]*"(?:insight|resonance)"[^}]*\}/gi, '')
@@ -424,13 +458,55 @@ export async function POST(request: NextRequest) {
         cleanGuidance = finalClean(cleanGuidance)
         cleanPractice = finalClean(cleanPractice)
         
+        // Final check: if still contains JSON patterns like "{ "insight": "..." }", extract content
+        if (cleanInsight.includes('"insight"') || cleanInsight.includes('"guidance"') || cleanInsight.includes('"practice"')) {
+          console.warn('Warning: insight still contains JSON patterns, applying additional cleanup')
+          // Try to extract content from patterns like "{ "insight": "content" }" or "insight": "content"
+          const match1 = cleanInsight.match(/\{\s*["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+          if (match1 && match1[1]) {
+            cleanInsight = match1[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+          } else {
+            const match2 = cleanInsight.match(/["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+            if (match2 && match2[1]) {
+              cleanInsight = match2[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+            }
+          }
+        }
+        if (cleanGuidance.includes('"insight"') || cleanGuidance.includes('"guidance"') || cleanGuidance.includes('"practice"')) {
+          console.warn('Warning: guidance still contains JSON patterns, applying additional cleanup')
+          const match1 = cleanGuidance.match(/\{\s*["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+          if (match1 && match1[1]) {
+            cleanGuidance = match1[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+          } else {
+            const match2 = cleanGuidance.match(/["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+            if (match2 && match2[1]) {
+              cleanGuidance = match2[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+            }
+          }
+        }
+        if (cleanPractice.includes('"insight"') || cleanPractice.includes('"guidance"') || cleanPractice.includes('"practice"')) {
+          console.warn('Warning: practice still contains JSON patterns, applying additional cleanup')
+          const match1 = cleanPractice.match(/\{\s*["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+          if (match1 && match1[1]) {
+            cleanPractice = match1[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+          } else {
+            const match2 = cleanPractice.match(/["']?(?:insight|guidance|practice)\s*["']?\s*[:：]\s*["']((?:[^"\\]|\\.)*)["']/)
+            if (match2 && match2[1]) {
+              cleanPractice = match2[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+            }
+          }
+        }
+        
         console.log('Cleaned fields:', {
           insightLength: cleanInsight.length,
           guidanceLength: cleanGuidance.length,
           practiceLength: cleanPractice.length,
-          insightPreview: cleanInsight.substring(0, 100),
-          guidancePreview: cleanGuidance.substring(0, 100),
-          practicePreview: cleanPractice.substring(0, 100)
+          insightPreview: cleanInsight.substring(0, 200),
+          guidancePreview: cleanGuidance.substring(0, 200),
+          practicePreview: cleanPractice.substring(0, 200),
+          insightHasJson: cleanInsight.includes('"insight"') || cleanInsight.includes('"guidance"') || cleanInsight.includes('"practice"'),
+          guidanceHasJson: cleanGuidance.includes('"insight"') || cleanGuidance.includes('"guidance"') || cleanGuidance.includes('"practice"'),
+          practiceHasJson: cleanPractice.includes('"insight"') || cleanPractice.includes('"guidance"') || cleanPractice.includes('"practice"')
         })
         
         // Check if we have at least insight/resonance (most important)
